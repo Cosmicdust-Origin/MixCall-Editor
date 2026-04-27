@@ -32,6 +32,15 @@ export default function LyricBlockComp({ block, language, onChange, ...wrapperPr
     onChange({ ...block, lines: block.lines.filter(l => l.id !== id) })
   }
 
+  const moveLine = (id: string, dir: 'up' | 'down') => {
+    const idx = block.lines.findIndex(l => l.id === id)
+    const next = [...block.lines]
+    const swap = dir === 'up' ? idx - 1 : idx + 1
+    if (swap < 0 || swap >= next.length) return
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    onChange({ ...block, lines: next })
+  }
+
   return (
     <BlockWrapper type="lyric" {...wrapperProps}>
       <div className="flex flex-col gap-3">
@@ -45,20 +54,27 @@ export default function LyricBlockComp({ block, language, onChange, ...wrapperPr
                 className="flex-1 w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300"
               />
               {language === 'jp' && (
-                <>
-                  
-                  <input
-                    value={line.ko}
-                    onChange={e => updateLine(line.id, 'ko', e.target.value)}
-                    placeholder="한국어 발음 (선택)"
-                    className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-blue-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
-                  />
-                </>
+                <input
+                  value={line.ko}
+                  onChange={e => updateLine(line.id, 'ko', e.target.value)}
+                  placeholder="한국어 발음 (선택)"
+                  className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-blue-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
+                />
               )}
+            </div>
+            <div className="flex flex-col gap-1 mt-1 shrink-0">
+              <button
+                onClick={() => moveLine(line.id, 'up')}
+                disabled={idx === 0}
+                className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">↑</button>
+              <button
+                onClick={() => moveLine(line.id, 'down')}
+                disabled={idx === block.lines.length - 1}
+                className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">↓</button>
             </div>
             {block.lines.length > 1 && (
               <button onClick={() => removeLine(line.id)}
-                className="mt-2 text-gray-300 hover:text-red-400 text-sm transition-colors">✕</button>
+                className="mt-2 text-gray-300 hover:text-red-400 text-sm transition-colors shrink-0">✕</button>
             )}
           </div>
         ))}
