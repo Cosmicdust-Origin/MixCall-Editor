@@ -42,6 +42,7 @@ return {
     images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`],
   },
 }
+}
 
 export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
