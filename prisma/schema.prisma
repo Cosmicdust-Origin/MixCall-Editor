@@ -15,6 +15,7 @@ model Profile {
   callSheets CallSheet[]
   mixPresets MixPreset[]
   comments   Comment[]
+  likes Like[]
 }
 
 model Artist {
@@ -49,6 +50,7 @@ model CallSheet {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   comments    Comment[]
+  likes Like[]
 }
 
 model MixPreset {
@@ -75,4 +77,15 @@ model Comment {
   replies   Comment[] @relation("replies")
   content   String
   createdAt DateTime  @default(now())
+}
+
+model Like {
+  id        String    @id @default(cuid())
+  sheetId   String
+  sheet     CallSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Profile   @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+
+  @@unique([sheetId, userId])
 }

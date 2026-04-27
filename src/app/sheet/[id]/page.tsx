@@ -5,6 +5,7 @@ import Link from 'next/link'
 import ShareButton from '@/components/ShareButton'
 import type { Metadata } from 'next'
 import Comments from '@/components/Comments'
+import LikeButton from '@/components/LikeButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -62,7 +63,8 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link href="/" className="text-red-500 font-black text-lg">📣 믹스콜 에디터</Link>
           <div className="flex items-center gap-2">
-            <ShareButton id={id} />
+  <LikeButton sheetId={id} />
+  <ShareButton id={id} />
             <Link href="/editor"
               className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
               ✏️ 내 콜표 만들기
