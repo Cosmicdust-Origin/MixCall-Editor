@@ -53,9 +53,9 @@ export async function GET(req: NextRequest) {
         }}>
           {artist && (
   <div style={{
-    fontSize: '52px',
+    fontSize: '40px',
     color: '#9ca3af',
-    fontWeight: 600,
+    fontWeight: 500,
     display: 'flex',
   }}>
     {artist}
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
 </div>
 {author && (
   <div style={{
-    fontSize: '48px',
+    fontSize: '40px',
     color: '#6b7280',
     fontWeight: 500,
     display: 'flex',
