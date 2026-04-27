@@ -91,17 +91,19 @@ export async function GET(req: NextRequest) {
           )}
 
           <div style={{
-            fontSize: title.length > 15 ? '80px' : '110px',
-            fontWeight: 800,
-            letterSpacing: '4px',
-            color: 'white',
-            textShadow: '0 0 40px rgba(239,68,68,0.9)',
-            display: 'flex',
-            textAlign: 'center',
-            lineHeight: 1.1,
-          }}>
-            {title}
-          </div>
+  fontSize: title.length > 20 ? '60px' : title.length > 15 ? '80px' : '110px',
+  fontWeight: 800,
+  letterSpacing: '2px',
+  color: 'white',
+  display: 'flex',
+  textAlign: 'center',
+  lineHeight: 1.2,
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  maxWidth: '1000px',
+}}>
+  {title}
+</div>
 
           {author && (
             <div style={{
