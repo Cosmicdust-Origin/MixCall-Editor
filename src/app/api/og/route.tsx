@@ -52,35 +52,35 @@ export async function GET(req: NextRequest) {
           width: '100%',
         }}>
           {artist && (
-            <div style={{
-              fontSize: '40px',
-              color: '#9ca3af',
-              fontWeight: 600,
-              display: 'flex',
-            }}>
-              {artist}
-            </div>
-          )}
-          <div style={{
-            fontSize: title.length > 15 ? '72px' : '90px',
-            fontWeight: 900,
-            color: '#111',
-            lineHeight: 1.1,
-            display: 'flex',
-            textAlign: 'center',
-          }}>
-            {title}
-          </div>
-          {author && (
-            <div style={{
-              fontSize: '36px',
-              color: '#6b7280',
-              fontWeight: 500,
-              display: 'flex',
-            }}>
-              콜표 by {author}
-            </div>
-          )}
+  <div style={{
+    fontSize: '52px',
+    color: '#9ca3af',
+    fontWeight: 600,
+    display: 'flex',
+  }}>
+    {artist}
+  </div>
+)}
+<div style={{
+  fontSize: title.length > 15 ? '100px' : '120px',
+  fontWeight: 900,
+  color: '#111',
+  lineHeight: 1.1,
+  display: 'flex',
+  textAlign: 'center',
+}}>
+  {title}
+</div>
+{author && (
+  <div style={{
+    fontSize: '48px',
+    color: '#6b7280',
+    fontWeight: 500,
+    display: 'flex',
+  }}>
+    콜표 by {author}
+  </div>
+)}
         </div>
 
         {/* 하단 */}
