@@ -2,6 +2,7 @@ export const revalidate = 0
 
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import AuthButton from '@/components/AuthButton'
 
 async function getPublicSheets() {
   try {
@@ -28,11 +29,13 @@ export default async function HomePage() {
             <h1 className="text-red-500 font-black text-xl">📣 믹스콜 에디터</h1>
             <p className="text-xs text-gray-400 mt-0.5">아이돌 공연 콜/믹스 콜표 제작 도구</p>
           </div>
-          <Link href="/editor"
-            className="text-sm px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
-            ✏️ 콜표 만들기
-          </Link>
-        </div>
+          <div className="flex items-center gap-2">
+  <AuthButton />
+  <Link href="/editor"
+    className="text-sm px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+    ✏️ 콜표 만들기
+  </Link>
+</div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
