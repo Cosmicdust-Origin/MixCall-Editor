@@ -3,6 +3,7 @@ export const revalidate = 0
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import AuthButton from '@/components/AuthButton'
+import SearchBar from '@/components/SearchBar'
 
 async function getPublicSheets(query?: string) {
   try {
@@ -26,8 +27,13 @@ async function getPublicSheets(query?: string) {
   }
 }
 
-export default async function HomePage() {
-  const sheets = await getPublicSheets()
+export default async function HomePage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const { q } = await searchParams
+  const sheets = await getPublicSheets(q)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,13 +55,14 @@ export default async function HomePage() {
 </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
+  <SearchBar defaultValue={q} />
 
         {/* 공개 콜표 목록 */}
         <div className="mb-6">
           <h2 className="font-bold text-gray-800 mb-3">
-            📋 등록된 콜표
-            <span className="text-sm font-normal text-gray-400 ml-2">{sheets.length}개</span>
-          </h2>
+  {q ? `"${q}" 검색 결과` : '📋 등록된 콜표'}
+  <span className="text-sm font-normal text-gray-400 ml-2">{sheets.length}개</span>
+</h2>
 
           {sheets.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center">
