@@ -21,7 +21,7 @@ export default function LoginPage() {
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) setError(error.message)
-      else setMessage('확인 이메일을 보냈어요! 메일함을 확인해주세요 😊')
+      else router.push('/setup')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError('이메일 또는 비밀번호가 틀렸어요')
