@@ -19,21 +19,22 @@ export async function GET(req: NextRequest) {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
+          padding: '60px',
         }}
       >
         {/* 상단 빨간 바 */}
         <div style={{
           position: 'absolute',
           top: 0, left: 0, right: 0,
-          height: '8px',
+          height: '12px',
           background: '#ef4444',
         }} />
 
         {/* 로고 */}
         <div style={{
           position: 'absolute',
-          top: '40px', left: '60px',
-          fontSize: '24px',
+          top: '36px', left: '60px',
+          fontSize: '28px',
           fontWeight: 900,
           color: '#ef4444',
           display: 'flex',
@@ -46,33 +47,34 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '12px',
-          padding: '0 80px',
+          gap: '20px',
           textAlign: 'center',
+          width: '100%',
         }}>
           {artist && (
             <div style={{
-              fontSize: '28px',
+              fontSize: '40px',
               color: '#9ca3af',
-              fontWeight: 500,
+              fontWeight: 600,
               display: 'flex',
             }}>
               {artist}
             </div>
           )}
           <div style={{
-            fontSize: title.length > 20 ? '48px' : '64px',
+            fontSize: title.length > 15 ? '72px' : '90px',
             fontWeight: 900,
             color: '#111',
-            lineHeight: 1.2,
+            lineHeight: 1.1,
             display: 'flex',
+            textAlign: 'center',
           }}>
             {title}
           </div>
           {author && (
             <div style={{
-              fontSize: '24px',
-              color: '#9ca3af',
+              fontSize: '36px',
+              color: '#6b7280',
               fontWeight: 500,
               display: 'flex',
             }}>
@@ -84,8 +86,8 @@ export async function GET(req: NextRequest) {
         {/* 하단 */}
         <div style={{
           position: 'absolute',
-          bottom: '40px',
-          fontSize: '18px',
+          bottom: '36px',
+          fontSize: '22px',
           color: '#d1d5db',
           display: 'flex',
         }}>
