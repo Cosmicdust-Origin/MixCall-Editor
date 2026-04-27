@@ -14,6 +14,7 @@ model Profile {
   createdAt  DateTime     @default(now())
   callSheets CallSheet[]
   mixPresets MixPreset[]
+  comments   Comment[]
 }
 
 model Artist {
@@ -47,6 +48,7 @@ model CallSheet {
   blocks      Json
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  comments    Comment[]
 }
 
 model MixPreset {
@@ -60,4 +62,17 @@ model MixPreset {
   text       String
   isOfficial Boolean  @default(false)
   createdAt  DateTime @default(now())
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  sheetId   String
+  sheet     CallSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Profile   @relation(fields: [userId], references: [id])
+  parentId  String?
+  parent    Comment?  @relation("replies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("replies")
+  content   String
+  createdAt DateTime  @default(now())
 }

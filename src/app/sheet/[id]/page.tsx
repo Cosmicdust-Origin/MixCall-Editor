@@ -4,6 +4,7 @@ import { Block } from '@/types'
 import Link from 'next/link'
 import ShareButton from '@/components/ShareButton'
 import type { Metadata } from 'next'
+import Comments from '@/components/Comments'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -121,6 +122,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           ))}
         </div>
 
+<Comments sheetId={id} />
         <p className="text-center text-xs text-gray-300 mt-6">
           이 에디터의 믹스 DB는{' '}
           <a href="https://twitter.com/K_LIVEIDOL_INFO" target="_blank" rel="noopener noreferrer"
