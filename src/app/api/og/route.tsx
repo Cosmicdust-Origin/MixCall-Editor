@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     fontWeight: 500,
     display: 'flex',
   }}>
-    콜표 by {author}
+    콜/믹스표 by {author}
   </div>
 )}
         </div>
