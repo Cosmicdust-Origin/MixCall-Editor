@@ -18,7 +18,7 @@ async function getPublicSheets(query?: string) {
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
-      include: { user: true },
+      include: { user: true, _count: { select: { likes: true } } },
     })
     return sheets
   } catch {
@@ -80,13 +80,16 @@ export default async function HomePage() {
       {sheet.songTitle || '제목 없음'}
     </p>
     <div className="flex items-center gap-2 mt-0.5">
-      <p className="text-xs text-gray-300">
-        {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')}
-      </p>
-      {sheet.user?.nickname && (
-        <p className="text-xs text-gray-400">by {sheet.user.nickname}</p>
-      )}
-    </div>
+  <p className="text-xs text-gray-300">
+    {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')}
+  </p>
+  {(sheet.user as any)?.nickname && (
+    <p className="text-xs text-gray-400">by {(sheet.user as any).nickname}</p>
+  )}
+  {sheet._count.likes > 0 && (
+    <p className="text-xs text-red-400">❤️ {sheet._count.likes}</p>
+  )}
+</div>
   </div>
   <span className="text-gray-300 text-sm">→</span>
 </Link>
