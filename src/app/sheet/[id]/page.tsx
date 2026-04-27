@@ -10,7 +10,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
 
   if (!sheet || !sheet.isPublic) notFound()
 
-  const blocks = sheet.blocks as Block[]
+  const blocks = sheet.blocks as unknown as Block[]
 
   return (
     <div className="min-h-screen bg-gray-50">
