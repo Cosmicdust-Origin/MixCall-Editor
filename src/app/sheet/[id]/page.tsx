@@ -6,6 +6,7 @@ import ShareButton from '@/components/ShareButton'
 import type { Metadata } from 'next'
 import Comments from '@/components/Comments'
 import LikeButton from '@/components/LikeButton'
+import BookmarkButton from '@/components/BookmarkButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -64,6 +65,8 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           <Link href="/" className="text-red-500 font-black text-lg">📣 믹스콜 에디터</Link>
           <div className="flex items-center gap-2">
   <LikeButton sheetId={id} />
+    <BookmarkButton sheetId={id} />
+
   <ShareButton id={id} />
             <Link href="/editor"
               className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
