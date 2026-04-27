@@ -1,15 +1,53 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { Block, Language } from '@/types'
+import { Block } from '@/types'
 import Link from 'next/link'
 import ShareButton from '@/components/ShareButton'
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const sheet = await prisma.callSheet.findUnique({
+    where: { id },
+    include: { user: true },
+  })
+
+  if (!sheet || !sheet.isPublic) return {}
+
+  const title = [sheet.artistName, sheet.songTitle].filter(Boolean).join(' - ') || '콜표'
+  const author = (sheet.user as any)?.nickname
+  const description = author ? `${title} | by ${author}` : title
+
+  return {
+    title: `${title} | 믹스콜 에디터`,
+    description,
+    openGraph: {
+      title: `${title} | 믹스콜 에디터`,
+      description,
+      url: `https://mix-call-editor.vercel.app/sheet/${id}`,
+      images: [
+        {
+          url: `https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || '')}`,
+          width: 1200,
+          height: 630,
+        }
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | 믹스콜 에디터`,
+      description,
+      images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || '')}`],
+    },
+  }
+}
 
 export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const sheet = await prisma.callSheet.findUnique({
-  where: { id },
-  include: { user: true },
-})
+    where: { id },
+    include: { user: true },
+  })
 
   if (!sheet || !sheet.isPublic) notFound()
 
@@ -18,29 +56,30 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 shadow-sm px-4 py-3">
-        <div className="flex items-center gap-2">
-  <ShareButton id={id} />
-  <Link href="/editor"
-    className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
-    ✏️ 내 콜표 만들기
-  </Link>
-</div>
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <Link href="/" className="text-red-500 font-black text-lg">📣 믹스콜 에디터</Link>
+          <div className="flex items-center gap-2">
+            <ShareButton id={id} />
+            <Link href="/editor"
+              className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+              ✏️ 내 콜표 만들기
+            </Link>
+          </div>
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        {/* 곡 정보 */}
         <div className="mb-4">
-  {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
-  <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
-  <p className="text-xs text-gray-300 mt-1">
-    {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
-  </p>
-  {(sheet.user as any)?.nickname && (
-    <p className="text-xs text-gray-400 mt-0.5">by {(sheet.user as any).nickname}</p>
-  )}
-</div>
+          {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
+          <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
+          <p className="text-xs text-gray-300 mt-1">
+            {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
+          </p>
+          {(sheet.user as any)?.nickname && (
+            <p className="text-xs text-gray-400 mt-0.5">by {(sheet.user as any).nickname}</p>
+          )}
+        </div>
 
-        {/* 콜표 */}
         <div className="bg-white rounded-xl p-6 shadow border border-gray-100 font-sans">
           {blocks.map(block => (
             <div key={block.id} className="mb-4">
