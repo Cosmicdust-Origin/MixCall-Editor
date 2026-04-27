@@ -46,12 +46,7 @@ export default function LyricBlockComp({ block, language, onChange, ...wrapperPr
               />
               {language === 'jp' && (
                 <>
-                  <input
-                    value={line.hira}
-                    onChange={e => updateLine(line.id, 'hira', e.target.value)}
-                    placeholder="히라가나 독음 (선택)"
-                    className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-gray-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
-                  />
+                  
                   <input
                     value={line.ko}
                     onChange={e => updateLine(line.id, 'ko', e.target.value)}
