@@ -6,7 +6,10 @@ import ShareButton from '@/components/ShareButton'
 
 export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const sheet = await prisma.callSheet.findUnique({ where: { id } })
+  const sheet = await prisma.callSheet.findUnique({
+  where: { id },
+  include: { user: true },
+})
 
   if (!sheet || !sheet.isPublic) notFound()
 
@@ -27,12 +30,15 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
       <main className="max-w-2xl mx-auto px-4 py-6">
         {/* 곡 정보 */}
         <div className="mb-4">
-          {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
-          <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
-          <p className="text-xs text-gray-300 mt-1">
-            {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
-          </p>
-        </div>
+  {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
+  <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
+  <p className="text-xs text-gray-300 mt-1">
+    {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
+  </p>
+  {(sheet.user as any)?.nickname && (
+    <p className="text-xs text-gray-400 mt-0.5">by {(sheet.user as any).nickname}</p>
+  )}
+</div>
 
         {/* 콜표 */}
         <div className="bg-white rounded-xl p-6 shadow border border-gray-100 font-sans">

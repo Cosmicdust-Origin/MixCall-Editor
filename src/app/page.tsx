@@ -4,12 +4,21 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import AuthButton from '@/components/AuthButton'
 
-async function getPublicSheets() {
+async function getPublicSheets(query?: string) {
   try {
     const sheets = await prisma.callSheet.findMany({
-      where: { isPublic: true },
+      where: {
+        isPublic: true,
+        ...(query ? {
+          OR: [
+            { artistName: { contains: query, mode: 'insensitive' } },
+            { songTitle: { contains: query, mode: 'insensitive' } },
+          ]
+        } : {})
+      },
       orderBy: { updatedAt: 'desc' },
       take: 50,
+      include: { user: true },
     })
     return sheets
   } catch {
@@ -62,20 +71,25 @@ export default async function HomePage() {
             <div className="flex flex-col gap-2">
               {sheets.map(sheet => (
                 <Link key={sheet.id} href={`/sheet/${sheet.id}`}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between hover:border-gray-300 transition-colors">
-                  <div>
-                    {sheet.artistName && (
-                      <p className="text-xs text-gray-400">{sheet.artistName}</p>
-                    )}
-                    <p className="font-medium text-gray-800">
-                      {sheet.songTitle || '제목 없음'}
-                    </p>
-                    <p className="text-xs text-gray-300 mt-0.5">
-                      {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')}
-                    </p>
-                  </div>
-                  <span className="text-gray-300 text-sm">→</span>
-                </Link>
+  className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between hover:border-gray-300 transition-colors">
+  <div>
+    {sheet.artistName && (
+      <p className="text-xs text-gray-400">{sheet.artistName}</p>
+    )}
+    <p className="font-medium text-gray-800">
+      {sheet.songTitle || '제목 없음'}
+    </p>
+    <div className="flex items-center gap-2 mt-0.5">
+      <p className="text-xs text-gray-300">
+        {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')}
+      </p>
+      {sheet.user?.nickname && (
+        <p className="text-xs text-gray-400">by {sheet.user.nickname}</p>
+      )}
+    </div>
+  </div>
+  <span className="text-gray-300 text-sm">→</span>
+</Link>
               ))}
             </div>
           )}
