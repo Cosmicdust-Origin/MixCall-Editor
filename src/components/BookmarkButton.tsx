@@ -47,7 +47,7 @@ export default function BookmarkButton({ sheetId }: { sheetId: string }) {
           : 'border-gray-200 text-gray-400 hover:border-yellow-200 hover:text-yellow-400'
       } disabled:cursor-default`}
     >
-      {bookmarked ? '🔖' : '🔖'}
+    {bookmarked ? '🔖 북마크됨' : '🔖 북마크'}
     </button>
   )
 }
