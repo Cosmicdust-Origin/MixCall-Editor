@@ -94,18 +94,28 @@ export default function EditorPage() {
     <Link href="/" className="text-red-500 font-black text-lg shrink-0">📣 믹스콜 에디터</Link>
     <div className="flex items-center gap-2 ml-auto">
       {/* 공개/비공개 토글 */}
-      <button
-        onClick={() => setIsPublic(p => !p)}
-        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${isPublic ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-400'}`}>
-        {isPublic ? '🌐 공개' : '🔒 비공개'}
-      </button>
+{user && (
+  <button
+    onClick={() => setIsPublic(p => !p)}
+    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${isPublic ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-400'}`}>
+    {isPublic ? '🌐 공개' : '🔒 비공개'}
+  </button>
+)}
       {/* 저장 버튼 */}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-30 transition-colors shrink-0">
-        {saving ? '저장 중…' : savedId ? '✓ 업데이트' : '저장'}
-      </button>
+{user ? (
+  <button
+    onClick={handleSave}
+    disabled={saving}
+    className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-30 transition-colors shrink-0">
+    {saving ? '저장 중…' : savedId ? '✓ 업데이트' : '저장'}
+  </button>
+) : (
+  <button
+    onClick={() => router.push('/login')}
+    className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors shrink-0">
+    🔑 로그인 후 저장
+  </button>
+)}
       {/* 로그인/내 콜표 */}
       {user ? (
         <button onClick={() => router.push('/my')}
