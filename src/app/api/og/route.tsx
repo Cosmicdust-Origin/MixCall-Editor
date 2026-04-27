@@ -13,30 +13,58 @@ export async function GET(req: NextRequest) {
         style={{
           width: '1200px',
           height: '630px',
-          background: 'white',
+          background: 'radial-gradient(circle at center, #1a0000 0%, #000000 70%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          padding: '60px',
+          overflow: 'hidden',
+          color: 'white',
         }}
       >
-        {/* 상단 빨간 바 */}
+        {/* 스포트라이트 효과 */}
         <div style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0,
-          height: '12px',
-          background: '#ef4444',
+          top: '-200px',
+          left: '50%',
+          width: '800px',
+          height: '900px',
+          marginLeft: '-400px',
+          background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.15), transparent 70%)',
+          display: 'flex',
         }} />
 
-        {/* 로고 */}
+        {/* 좌측 하단 글로우 */}
         <div style={{
           position: 'absolute',
-          top: '36px', left: '60px',
+          bottom: '-100px',
+          left: '-100px',
+          width: '400px',
+          height: '400px',
+          background: 'radial-gradient(circle, rgba(239,68,68,0.12), transparent 70%)',
+          display: 'flex',
+        }} />
+
+        {/* 우측 상단 글로우 */}
+        <div style={{
+          position: 'absolute',
+          top: '-50px',
+          right: '-50px',
+          width: '300px',
+          height: '300px',
+          background: 'radial-gradient(circle, rgba(239,68,68,0.1), transparent 70%)',
+          display: 'flex',
+        }} />
+
+        {/* 브랜드명 */}
+        <div style={{
+          position: 'absolute',
+          top: '32px',
+          left: '48px',
           fontSize: '28px',
-          fontWeight: 900,
-          color: '#ef4444',
+          fontWeight: 600,
+          opacity: 0.9,
           display: 'flex',
         }}>
           📣 믹스콜 에디터
@@ -47,48 +75,53 @@ export async function GET(req: NextRequest) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '20px',
-          textAlign: 'center',
-          width: '100%',
+          gap: '12px',
+          marginTop: '20px',
         }}>
           {artist && (
-  <div style={{
-    fontSize: '40px',
-    color: '#9ca3af',
-    fontWeight: 500,
-    display: 'flex',
-  }}>
-    {artist}
-  </div>
-)}
-<div style={{
-  fontSize: title.length > 15 ? '100px' : '120px',
-  fontWeight: 900,
-  color: '#111',
-  lineHeight: 1.1,
-  display: 'flex',
-  textAlign: 'center',
-}}>
-  {title}
-</div>
-{author && (
-  <div style={{
-    fontSize: '40px',
-    color: '#6b7280',
-    fontWeight: 500,
-    display: 'flex',
-  }}>
-    콜/믹스표 by {author}
-  </div>
-)}
+            <div style={{
+              fontSize: '40px',
+              fontWeight: 600,
+              opacity: 0.7,
+              letterSpacing: '2px',
+              display: 'flex',
+            }}>
+              {artist}
+            </div>
+          )}
+
+          <div style={{
+            fontSize: title.length > 15 ? '80px' : '110px',
+            fontWeight: 800,
+            letterSpacing: '4px',
+            color: 'white',
+            textShadow: '0 0 40px rgba(239,68,68,0.9)',
+            display: 'flex',
+            textAlign: 'center',
+            lineHeight: 1.1,
+          }}>
+            {title}
+          </div>
+
+          {author && (
+            <div style={{
+              fontSize: '30px',
+              opacity: 0.85,
+              display: 'flex',
+              marginTop: '8px',
+            }}>
+              🔖 콜/믹스표 by {author}
+            </div>
+          )}
         </div>
 
-        {/* 하단 */}
+        {/* 하단 URL */}
         <div style={{
           position: 'absolute',
-          bottom: '36px',
+          bottom: '28px',
           fontSize: '22px',
-          color: '#d1d5db',
+          opacity: 0.3,
+          letterSpacing: '1px',
           display: 'flex',
         }}>
           mix-call-editor.vercel.app
