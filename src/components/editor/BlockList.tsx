@@ -37,6 +37,21 @@ export default function BlockList({ blocks, language, onChange }: Props) {
     onChange(next)
   }
 
+  const splitBlock = (blockId: string, lineIdx: number) => {
+    const block = blocks.find(b => b.id === blockId)
+    if (!block || block.type !== 'lyric') return
+    const lines = (block as LyricBlock).lines
+    if (lineIdx <= 0 || lineIdx >= lines.length) return
+
+    const block1: LyricBlock = { ...block as LyricBlock, id: crypto.randomUUID(), lines: lines.slice(0, lineIdx) }
+    const block2: LyricBlock = { ...block as LyricBlock, id: crypto.randomUUID(), lines: lines.slice(lineIdx) }
+
+    const idx = blocks.findIndex(b => b.id === blockId)
+    const next = [...blocks]
+    next.splice(idx, 1, block1, block2)
+    onChange(next)
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {blocks.map((block, idx) => {
@@ -62,6 +77,7 @@ export default function BlockList({ blocks, language, onChange }: Props) {
           <LyricBlockComp key={block.id} block={block as LyricBlock}
             language={language}
             onChange={updated => updateBlock(block.id, updated)}
+            onSplit={(lineIdx) => splitBlock(block.id, lineIdx)}
             {...commonProps} />
         )
         if (block.type === 'mix') return (
