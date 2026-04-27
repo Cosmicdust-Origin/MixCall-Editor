@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id         String       @id
+  nickname   String?
+  createdAt  DateTime     @default(now())
+  callSheets CallSheet[]
+  mixPresets MixPreset[]
+}
+
+model Artist {
+  id        String   @id @default(cuid())
+  name      String
+  nameKo    String?
+  nameJp    String?
+  createdAt DateTime @default(now())
+  songs     Song[]
+}
+
+model Song {
+  id         String      @id @default(cuid())
+  artistId   String
+  artist     Artist      @relation(fields: [artistId], references: [id])
+  title      String
+  titleKo    String?
+  createdAt  DateTime    @default(now())
+  callSheets CallSheet[]
+}
+
+model CallSheet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        Profile   @relation(fields: [userId], references: [id])
+  songId      String?
+  song        Song?     @relation(fields: [songId], references: [id])
+  artistName  String?
+  songTitle   String?
+  isPublic    Boolean   @default(false)
+  blocks      Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model MixPreset {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       Profile? @relation(fields: [userId], references: [id])
+  name       String
+  category   String
+  bars       Int?
+  tokens     String[]
+  text       String
+  isOfficial Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
