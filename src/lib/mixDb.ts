@@ -151,7 +151,7 @@ export const MIX_DB: MixPreset[] = [
     tokens: ['하이세노', '오이'],
     text: '아~ 후후~ 👏👏 후우후우 하이하이세노! 하이세노! 오이 오이 오이오이오이오이!' },
 
-  { id: 'haiseno-short', name: '하이세노 발동 생략', category: 'call', isOfficial: true,
+  { id: 'haiseno-short', name: '하이세노 추임새', category: 'call', isOfficial: true,
     tokens: ['하이세노', '오이'],
     text: '하이세노! 오이 오이 오이오이오이오이!' },
 
@@ -288,6 +288,10 @@ export const MIX_DB: MixPreset[] = [
   { id: 'danbo-3', name: '단보 코죠 삼연', category: 'mid', isOfficial: true,
     tokens: ['노린교', '스이산교', '사카나노', '오카시이', '고시히카리', '요스이로', '콤바인', '단보노'],
     text: '노린교, 스이산교, 사카나노 요스가! 👏 오카시이!\n고시히카리! 사사니시키! 이야이야이이야 마테마테마테마테!\n요스이로, 콤바인, 단보노 요스가! 👏 오카시이!' },
+
+{ id: 'speed-triple', name: '배속 삼연 믹스', category: 'variant', isOfficial: true,
+  tokens: ['타이가화이야사이바파이바다이바바이바자자', '토라히진조셍이아마신도캇센', '챠페', '아페', '카라', '키나', '라라', '투스케', '위스페', '케시', '시스파'],
+  text: '타이가화이야사이바파이바다이바바이바자자!\n타이가화이야사이바파이바다이바바이바자자!\n토라히진조셍이아마신도캇센!\n토라히진조셍이아마신도캇센!\n챠페! 아페! 카라! 키나! 라라! 투스케! 위스페! 케시! 시스파~' },
 
   { id: 'jiji', name: '십이간지 믹스', category: 'mid', isOfficial: true,
     tokens: ['네', '우시', '토라', '우', '사츠미', '이누이'],
