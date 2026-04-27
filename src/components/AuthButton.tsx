@@ -22,9 +22,9 @@ export default function AuthButton() {
   )
 
   return (
-    <button onClick={() => router.push('/login')}
-      className="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-400 transition-colors">
-      로그인
-    </button>
+    <button onClick={() => router.push('/my')}
+  className="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-400 transition-colors">
+  My Page
+</button>
   )
 }
