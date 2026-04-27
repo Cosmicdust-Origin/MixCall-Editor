@@ -14,32 +14,33 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   if (!sheet || !sheet.isPublic) return {}
 
-  const title = [sheet.artistName, sheet.songTitle].filter(Boolean).join(' - ') || '콜표'
-  const author = (sheet.user as any)?.nickname
-  const description = author ? `${title} | by ${author}` : title
+  const songTitle = sheet.songTitle || '콜표'
+const artistName = sheet.artistName || ''
+const author = (sheet.user as any)?.nickname
+const displayTitle = [artistName, songTitle].filter(Boolean).join(' - ')
+const description = author ? `${displayTitle} | by ${author}` : displayTitle
 
-  return {
-    title: `${title} | 믹스콜 에디터`,
+return {
+  title: `${displayTitle} | 믹스콜 에디터`,
+  description,
+  openGraph: {
+    title: `${displayTitle} | 믹스콜 에디터`,
     description,
-    openGraph: {
-      title: `${title} | 믹스콜 에디터`,
-      description,
-      url: `https://mix-call-editor.vercel.app/sheet/${id}`,
-      images: [
-        {
-          url: `https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || '')}`,
-          width: 1200,
-          height: 630,
-        }
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${title} | 믹스콜 에디터`,
-      description,
-      images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || '')}`],
-    },
-  }
+    url: `https://mix-call-editor.vercel.app/sheet/${id}`,
+    images: [
+      {
+        url: `https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`,
+        width: 1200,
+        height: 630,
+      }
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${displayTitle} | 믹스콜 에디터`,
+    description,
+    images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`],
+  },
 }
 
 export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
