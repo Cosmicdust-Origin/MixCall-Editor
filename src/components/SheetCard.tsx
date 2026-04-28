@@ -64,12 +64,16 @@ export default function SheetCard({ sheet }: Props) {
       </Link>
       <div className="flex items-center gap-2 ml-3 shrink-0">
         {user && (
-          <button
-            onClick={handleBookmark}
-            className={`text-lg transition-colors ${bookmarked ? 'text-yellow-400' : 'text-gray-200 hover:text-yellow-300'}`}>
-            🔖
-          </button>
-        )}
+  <button
+    onClick={handleBookmark}
+    className={`text-xs px-2 py-1 rounded border transition-colors ${
+      bookmarked
+        ? 'bg-yellow-50 border-yellow-300 text-yellow-600'
+        : 'border-gray-200 text-gray-300 hover:border-yellow-300 hover:text-yellow-400'
+    }`}>
+    {bookmarked ? '🔖 저장됨' : '🔖'}
+  </button>
+)}
         <span className="text-gray-300 text-sm">→</span>
       </div>
     </div>
