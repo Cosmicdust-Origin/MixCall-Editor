@@ -142,38 +142,37 @@ export default function EditorPage() {
         </div>
 
         {/* 3행: 언어 토글 + 곡 언어 + 편집/미리보기 토글 */}
-        <div className="flex gap-2 mt-2 flex-wrap">
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setLanguage('jp')}
-              className={`text-xs px-3 py-1.5 transition-colors ${language === 'jp' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-              🇯🇵 일본어</button>
-            <button onClick={() => setLanguage('ko')}
-              className={`text-xs px-3 py-1.5 transition-colors ${language === 'ko' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-              🇰🇷 한국어</button>
-          </div>
+<div className="flex gap-2 mt-2 flex-wrap">
+  <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+    <button onClick={() => setLanguage('jp')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${language === 'jp' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+      🇯🇵 일본어</button>
+    <button onClick={() => setLanguage('ko')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${language === 'ko' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+      🇰🇷 한국어</button>
+  </div>
 
-          {/* 곡 언어 선택 */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setSongLang('ko')}
-              className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'ko' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              🇰🇷 한국 곡</button>
-            <button onClick={() => setSongLang('jp')}
-              className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'jp' ? 'bg-red-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              🇯🇵 일본 곡</button>
-            <button onClick={() => setSongLang(null)}
-              className={`text-xs px-3 py-1.5 transition-colors ${songLang === null ? 'bg-gray-700 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              미분류</button>
-          </div>
+  <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+    <button onClick={() => setSongLang('ko')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'ko' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+      🇰🇷 한국 곡</button>
+    <button onClick={() => setSongLang('jp')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'jp' ? 'bg-red-100 text-red-500' : 'text-gray-500 hover:bg-gray-50'}`}>
+      🇯🇵 일본 곡</button>
+    <button onClick={() => setSongLang(null)}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === null ? 'bg-gray-200 text-gray-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+      미분류</button>
+  </div>
 
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setMode('edit')}
-              className={`text-xs px-3 py-1.5 transition-colors ${mode === 'edit' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-              ✏️ 편집</button>
-            <button onClick={() => setMode('preview')}
-              className={`text-xs px-3 py-1.5 transition-colors ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-              👁️ 미리보기</button>
-          </div>
-        </div>
+  <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+    <button onClick={() => setMode('edit')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'edit' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+      ✏️ 편집</button>
+    <button onClick={() => setMode('preview')}
+      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+      👁️ 미리보기</button>
+  </div>
+</div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
