@@ -36,6 +36,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data: {
       artistName: body.artistName ?? sheet.artistName,
       songTitle: body.songTitle ?? sheet.songTitle,
+      songLang: body.songLang !== undefined ? body.songLang : sheet.songLang,
       isPublic: body.isPublic ?? sheet.isPublic,
       blocks: body.blocks ?? sheet.blocks,
     },

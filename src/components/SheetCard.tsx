@@ -47,9 +47,20 @@ export default function SheetCard({ sheet }: Props) {
         {sheet.artistName && (
           <p className="text-xs text-gray-400">{sheet.artistName}</p>
         )}
-        <p className="font-medium text-gray-800">
-          {sheet.songTitle || '제목 없음'}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-gray-800">
+            {sheet.songTitle || '제목 없음'}
+          </p>
+          {sheet.songLang && (
+            <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+              sheet.songLang === 'ko'
+                ? 'border-blue-400 text-blue-500'
+                : 'border-red-400 text-red-500'
+            }`}>
+              {sheet.songLang === 'ko' ? '한국 곡' : '일본 곡'}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-xs text-gray-300">
             {mounted ? new Date(sheet.updatedAt).toLocaleDateString('ko-KR') : ''}
@@ -64,16 +75,16 @@ export default function SheetCard({ sheet }: Props) {
       </Link>
       <div className="flex items-center gap-2 ml-3 shrink-0">
         {user && (
-  <button
-    onClick={handleBookmark}
-    className={`text-xs px-2 py-1 rounded border transition-colors ${
-      bookmarked
-        ? 'bg-yellow-50 border-yellow-300 text-yellow-600'
-        : 'border-gray-200 text-gray-300 hover:border-yellow-300 hover:text-yellow-400'
-    }`}>
-    {bookmarked ? '🔖 저장됨' : '🔖'}
-  </button>
-)}
+          <button
+            onClick={handleBookmark}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${
+              bookmarked
+                ? 'bg-yellow-50 border-yellow-300 text-yellow-600'
+                : 'border-gray-200 text-gray-300 hover:border-yellow-300 hover:text-yellow-400'
+            }`}>
+            {bookmarked ? '🔖 저장됨' : '🔖'}
+          </button>
+        )}
         <span className="text-gray-300 text-sm">→</span>
       </div>
     </div>

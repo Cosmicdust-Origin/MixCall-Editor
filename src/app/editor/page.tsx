@@ -22,29 +22,29 @@ export default function EditorPage() {
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [songLang, setSongLang] = useState<'ko' | 'jp' | null>(null)
 
   useEffect(() => {
-  supabase.auth.getSession().then(async ({ data: { session } }) => {
-    setUser(session?.user ?? null)
-
-    // URL에 id 있으면 기존 콜표 불러오기
-    const params = new URLSearchParams(window.location.search)
-    const id = params.get('id')
-    if (id && session) {
-      const res = await fetch(`/api/sheets/${id}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const data = await res.json()
-      if (data.blocks) {
-        setBlocks(data.blocks)
-        setArtistName(data.artistName || '')
-        setSongTitle(data.songTitle || '')
-        setIsPublic(data.isPublic)
-        setSavedId(id)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      if (id && session) {
+        const res = await fetch(`/api/sheets/${id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        })
+        const data = await res.json()
+        if (data.blocks) {
+          setBlocks(data.blocks)
+          setArtistName(data.artistName || '')
+          setSongTitle(data.songTitle || '')
+          setIsPublic(data.isPublic)
+          setSongLang(data.songLang || null)
+          setSavedId(id)
+        }
       }
-    }
-  })
-}, [])
+    })
+  }, [])
 
   const addBlock = (type: Block['type']) => {
     const newBlock: Block = type === 'lyric'
@@ -61,7 +61,7 @@ export default function EditorPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const body = { artistName, songTitle, isPublic, blocks }
+      const body = { artistName, songTitle, songLang, isPublic, blocks }
 
       if (savedId) {
         await fetch(`/api/sheets/${savedId}`, {
@@ -87,85 +87,94 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* 헤더 */}
-<header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm px-4 py-3">
-  {/* 1행: 로고 + 저장/로그인 */}
-  <div className="flex items-center justify-between gap-2">
-    <Link href="/" className="text-red-500 font-black text-lg shrink-0">📣 믹스콜 에디터</Link>
-    <div className="flex items-center gap-2 ml-auto">
-      {/* 공개/비공개 토글 */}
-{user && (
-  <button
-    onClick={() => setIsPublic(p => !p)}
-    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${isPublic ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-400'}`}>
-    {isPublic ? '🌐 공개' : '🔒 비공개'}
-  </button>
-)}
-      {/* 저장 버튼 */}
-{user ? (
-  <button
-    onClick={handleSave}
-    disabled={saving}
-    className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-30 transition-colors shrink-0">
-    {saving ? '저장 중…' : savedId ? '✓ 업데이트' : '저장'}
-  </button>
-) : (
-  <button
-    onClick={() => router.push('/login')}
-    className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors shrink-0">
-    🔑 로그인 후 저장
-  </button>
-)}
-      {/* 로그인/내 콜표 */}
-      {user ? (
-        <button onClick={() => router.push('/my')}
-          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
-          내 콜표</button>
-      ) : (
-        <button onClick={() => router.push('/login')}
-          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
-          로그인</button>
-      )}
-    </div>
-  </div>
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm px-4 py-3">
+        {/* 1행: 로고 + 저장/로그인 */}
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" className="text-red-500 font-black text-lg shrink-0">📣 믹스콜 에디터</Link>
+          <div className="flex items-center gap-2 ml-auto">
+            {user && (
+              <button
+                onClick={() => setIsPublic(p => !p)}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${isPublic ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-400'}`}>
+                {isPublic ? '🌐 공개' : '🔒 비공개'}
+              </button>
+            )}
+            {user ? (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-30 transition-colors shrink-0">
+                {saving ? '저장 중…' : savedId ? '✓ 업데이트' : '저장'}
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/login')}
+                className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors shrink-0">
+                🔑 로그인 후 저장
+              </button>
+            )}
+            {user ? (
+              <button onClick={() => router.push('/my')}
+                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
+                내 콜표</button>
+            ) : (
+              <button onClick={() => router.push('/login')}
+                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
+                로그인</button>
+            )}
+          </div>
+        </div>
 
-  {/* 2행: 아티스트명 + 곡 제목 */}
-  <div className="flex gap-2 mt-2">
-    <input
-      value={artistName}
-      onChange={e => setArtistName(e.target.value)}
-      placeholder="아티스트명"
-      className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
-    />
-    <input
-      value={songTitle}
-      onChange={e => setSongTitle(e.target.value)}
-      placeholder="곡 제목"
-      className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
-    />
-  </div>
+        {/* 2행: 아티스트명 + 곡 제목 */}
+        <div className="flex gap-2 mt-2">
+          <input
+            value={artistName}
+            onChange={e => setArtistName(e.target.value)}
+            placeholder="아티스트명"
+            className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
+          />
+          <input
+            value={songTitle}
+            onChange={e => setSongTitle(e.target.value)}
+            placeholder="곡 제목"
+            className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
+          />
+        </div>
 
-  {/* 3행: 언어 토글 + 편집/미리보기 토글 */}
-  <div className="flex gap-2 mt-2">
-    <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-      <button onClick={() => setLanguage('jp')}
-        className={`text-xs px-3 py-1.5 transition-colors ${language === 'jp' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-        🇯🇵 일본어</button>
-      <button onClick={() => setLanguage('ko')}
-        className={`text-xs px-3 py-1.5 transition-colors ${language === 'ko' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-        🇰🇷 한국어</button>
-    </div>
-    <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-      <button onClick={() => setMode('edit')}
-        className={`text-xs px-3 py-1.5 transition-colors ${mode === 'edit' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-        ✏️ 편집</button>
-      <button onClick={() => setMode('preview')}
-        className={`text-xs px-3 py-1.5 transition-colors ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
-        👁️ 미리보기</button>
-    </div>
-  </div>
-</header>
+        {/* 3행: 언어 토글 + 곡 언어 + 편집/미리보기 토글 */}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button onClick={() => setLanguage('jp')}
+              className={`text-xs px-3 py-1.5 transition-colors ${language === 'jp' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              🇯🇵 일본어</button>
+            <button onClick={() => setLanguage('ko')}
+              className={`text-xs px-3 py-1.5 transition-colors ${language === 'ko' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              🇰🇷 한국어</button>
+          </div>
 
+          {/* 곡 언어 선택 */}
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button onClick={() => setSongLang('ko')}
+              className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'ko' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              🇰🇷 한국 곡</button>
+            <button onClick={() => setSongLang('jp')}
+              className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'jp' ? 'bg-red-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              🇯🇵 일본 곡</button>
+            <button onClick={() => setSongLang(null)}
+              className={`text-xs px-3 py-1.5 transition-colors ${songLang === null ? 'bg-gray-700 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              미분류</button>
+          </div>
+
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button onClick={() => setMode('edit')}
+              className={`text-xs px-3 py-1.5 transition-colors ${mode === 'edit' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              ✏️ 편집</button>
+            <button onClick={() => setMode('preview')}
+              className={`text-xs px-3 py-1.5 transition-colors ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              👁️ 미리보기</button>
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         {mode === 'edit' ? (

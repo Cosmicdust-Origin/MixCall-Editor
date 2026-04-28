@@ -45,6 +45,19 @@ export default function EditorPage() {
           />
         </div>
 
+        {/* 곡 언어 선택 */}
+<div className="flex rounded-lg border border-gray-200 overflow-hidden">
+  <button onClick={() => setSongLang('ko')}
+    className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'ko' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+    🇰🇷 한국 곡</button>
+  <button onClick={() => setSongLang('jp')}
+    className={`text-xs px-3 py-1.5 transition-colors ${songLang === 'jp' ? 'bg-red-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+    🇯🇵 일본 곡</button>
+  <button onClick={() => setSongLang(null)}
+    className={`text-xs px-3 py-1.5 transition-colors ${songLang === null ? 'bg-gray-700 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+    미분류</button>
+</div>
+
         {/* 언어 토글 */}
         <div className="flex rounded-lg border border-zinc-700 overflow-hidden shrink-0">
           <button

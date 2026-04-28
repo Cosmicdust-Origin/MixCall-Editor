@@ -18,33 +18,33 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!sheet || !sheet.isPublic) return {}
 
   const songTitle = sheet.songTitle || '콜표'
-const artistName = sheet.artistName || ''
-const author = (sheet.user as any)?.nickname
-const displayTitle = [artistName, songTitle].filter(Boolean).join(' - ')
-const description = author ? `${displayTitle} | by ${author}` : displayTitle
+  const artistName = sheet.artistName || ''
+  const author = (sheet.user as any)?.nickname
+  const displayTitle = [artistName, songTitle].filter(Boolean).join(' - ')
+  const description = author ? `${displayTitle} | by ${author}` : displayTitle
 
-return {
-  title: `${displayTitle} | 믹스콜 에디터`,
-  description,
-  openGraph: {
+  return {
     title: `${displayTitle} | 믹스콜 에디터`,
     description,
-    url: `https://mix-call-editor.vercel.app/sheet/${id}`,
-    images: [
-      {
-        url: `https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`,
-        width: 1200,
-        height: 630,
-      }
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${displayTitle} | 믹스콜 에디터`,
-    description,
-    images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`],
-  },
-}
+    openGraph: {
+      title: `${displayTitle} | 믹스콜 에디터`,
+      description,
+      url: `https://mix-call-editor.vercel.app/sheet/${id}`,
+      images: [
+        {
+          url: `https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`,
+          width: 1200,
+          height: 630,
+        }
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${displayTitle} | 믹스콜 에디터`,
+      description,
+      images: [`https://mix-call-editor.vercel.app/api/og?title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artistName)}&author=${encodeURIComponent(author || '')}`],
+    },
+  }
 }
 
 export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
@@ -64,10 +64,9 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link href="/" className="text-red-500 font-black text-lg">📣 믹스콜 에디터</Link>
           <div className="flex items-center gap-2">
-  <LikeButton sheetId={id} />
-    <BookmarkButton sheetId={id} />
-
-  <ShareButton id={id} />
+            <LikeButton sheetId={id} />
+            <BookmarkButton sheetId={id} />
+            <ShareButton id={id} />
             <Link href="/editor"
               className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
               ✏️ 내 콜표 만들기
@@ -79,7 +78,18 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-4">
           {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
-          <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
+            {(sheet as any).songLang && (
+              <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+                (sheet as any).songLang === 'ko'
+                  ? 'border-blue-400 text-blue-500'
+                  : 'border-red-400 text-red-500'
+              }`}>
+                {(sheet as any).songLang === 'ko' ? '한국 곡' : '일본 곡'}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-300 mt-1">
             {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
           </p>
@@ -127,7 +137,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           ))}
         </div>
 
-<Comments sheetId={id} />
+        <Comments sheetId={id} />
         <p className="text-center text-xs text-gray-300 mt-6">
           이 에디터의 믹스 DB는{' '}
           <a href="https://twitter.com/K_LIVEIDOL_INFO" target="_blank" rel="noopener noreferrer"

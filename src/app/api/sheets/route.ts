@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { supabaseAdmin } from '@/lib/supabaseServer'
 
-// 내 콜표 목록 조회
 export async function GET(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
@@ -17,7 +16,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(sheets)
 }
 
-// 콜표 저장
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '')
@@ -38,6 +36,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         artistName: body.artistName || null,
         songTitle: body.songTitle || null,
+        songLang: body.songLang || null,
         isPublic: body.isPublic ?? false,
         blocks: body.blocks,
       },
