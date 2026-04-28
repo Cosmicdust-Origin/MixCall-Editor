@@ -81,14 +81,14 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-2">
             <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
             {(sheet as any).songLang && (
-              <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
-                (sheet as any).songLang === 'ko'
-                  ? 'border-blue-400 text-blue-500'
-                  : 'border-red-400 text-red-500'
-              }`}>
-                {(sheet as any).songLang === 'ko' ? '한국 곡' : '일본 곡'}
-              </span>
-            )}
+  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+    (sheet as any).songLang === 'ko'
+      ? 'border-blue-200 text-blue-400'
+      : 'border-red-200 text-red-400'
+  }`}>
+    {(sheet as any).songLang === 'ko' ? '한국 곡' : '일본 곡'}
+  </span>
+)}
           </div>
           <p className="text-xs text-gray-300 mt-1">
             {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트

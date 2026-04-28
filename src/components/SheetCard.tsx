@@ -52,14 +52,14 @@ export default function SheetCard({ sheet }: Props) {
             {sheet.songTitle || '제목 없음'}
           </p>
           {sheet.songLang && (
-            <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
-              sheet.songLang === 'ko'
-                ? 'border-blue-400 text-blue-500'
-                : 'border-red-400 text-red-500'
-            }`}>
-              {sheet.songLang === 'ko' ? '한국 곡' : '일본 곡'}
-            </span>
-          )}
+  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+    sheet.songLang === 'ko'
+      ? 'border-blue-200 text-blue-400'
+      : 'border-red-200 text-red-400'
+  }`}>
+    {sheet.songLang === 'ko' ? '한국 곡' : '일본 곡'}
+  </span>
+)}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-xs text-gray-300">
