@@ -11,8 +11,10 @@ interface Props {
 export default function SheetCard({ sheet }: Props) {
   const [bookmarked, setBookmarked] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session) {
@@ -50,7 +52,7 @@ export default function SheetCard({ sheet }: Props) {
         </p>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-xs text-gray-300">
-            {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')}
+            {mounted ? new Date(sheet.updatedAt).toLocaleDateString('ko-KR') : ''}
           </p>
           {sheet.user?.nickname && (
             <p className="text-xs text-gray-400">by {sheet.user.nickname}</p>
