@@ -9,14 +9,14 @@ datasource db {
 }
 
 model Profile {
-  id         String       @id
+  id         String      @id
   nickname   String?
-  createdAt  DateTime     @default(now())
+  createdAt  DateTime    @default(now())
   callSheets CallSheet[]
   mixPresets MixPreset[]
   comments   Comment[]
-  bookmarks Bookmark[]
-  likes Like[]
+  bookmarks  Bookmark[]
+  likes      Like[]
 }
 
 model Artist {
@@ -39,20 +39,21 @@ model Song {
 }
 
 model CallSheet {
-  id          String    @id @default(cuid())
-  userId      String
-  user        Profile   @relation(fields: [userId], references: [id])
-  songId      String?
-  song        Song?     @relation(fields: [songId], references: [id])
-  artistName  String?
-  songTitle   String?
-  isPublic    Boolean   @default(false)
-  blocks      Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  comments    Comment[]
-  bookmarks Bookmark[]
-  likes Like[]
+  id         String    @id @default(cuid())
+  userId     String
+  user       Profile   @relation(fields: [userId], references: [id])
+  songId     String?
+  song       Song?     @relation(fields: [songId], references: [id])
+  artistName String?
+  songTitle  String?
+  songLang   String?
+  isPublic   Boolean   @default(false)
+  blocks     Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  comments   Comment[]
+  bookmarks  Bookmark[]
+  likes      Like[]
 }
 
 model MixPreset {
@@ -102,5 +103,3 @@ model Bookmark {
 
   @@unique([sheetId, userId])
 }
-
-songLang    String?   // 'ko' | 'jp'
