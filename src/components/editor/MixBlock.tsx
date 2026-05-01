@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { MixBlock, MixPreset } from '@/types'
+import { MixBlock, MixAlternative, MixPreset } from '@/types'
 import { MIX_DB, getSuggestions, getNextTokens } from '@/lib/mixDb'
 import BlockWrapper from './BlockWrapper'
 
@@ -16,23 +16,22 @@ interface Props {
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
+  onInsertPerformance: () => void
+  referenceUrl?: string
+  onReferenceUrlChange: (url: string) => void
 }
 
 const QUICK_MIXES = ['기본 믹스 발동', '묘혼투스케 발동', '묘혼도라이바', '이엣타이가 추임새', '하이세노 콜', '사랑해 믹스', '원장 믹스', '혼돈 믹스 (와루도 카오스)']
 
 export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props) {
-  // 믹스명 검색
   const [nameQuery, setNameQuery] = useState('')
   const [nameSuggestions, setNameSuggestions] = useState<MixPreset[]>([])
   const [showNameSug, setShowNameSug] = useState(false)
-
-  // 구호 조립
   const [wordInput, setWordInput] = useState('')
   const [currentTokens, setCurrentTokens] = useState<string[]>([])
   const [nextTokens, setNextTokens] = useState<string[]>([])
   const wordInputRef = useRef<HTMLInputElement>(null)
 
-  // 믹스명 검색 핸들러
   const handleNameQuery = (val: string) => {
     setNameQuery(val)
     if (!val.trim()) { setNameSuggestions([]); setShowNameSug(false); return }
@@ -41,7 +40,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
     setShowNameSug(results.length > 0)
   }
 
-  // 믹스 통째로 선택
   const selectMix = (mix: MixPreset) => {
     onChange({ ...block, text: mix.text, mixPresetId: mix.id })
     setCurrentTokens(mix.tokens)
@@ -52,7 +50,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
     wordInputRef.current?.focus()
   }
 
-  // 단어 입력 핸들러 — 스페이스바로 확정
   const handleWordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault()
@@ -71,7 +68,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
     setNextTokens(getNextTokens(val, currentTokens))
   }
 
-  // 토큰 추가
   const appendToken = (token: string) => {
     const newTokens = [...currentTokens, token]
     const newText = block.text ? block.text + ' ' + token : token
@@ -80,6 +76,29 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
     setNextTokens(getNextTokens(token, newTokens))
     setWordInput('')
     wordInputRef.current?.focus()
+  }
+
+  // ── alternatives 핸들러 ──
+  const addAlternative = () => {
+    const alts = block.alternatives ?? []
+    onChange({
+      ...block,
+      alternatives: [...alts, { id: crypto.randomUUID(), text: '' }]
+    })
+  }
+
+  const updateAlternative = (id: string, text: string) => {
+    onChange({
+      ...block,
+      alternatives: (block.alternatives ?? []).map(a => a.id === id ? { ...a, text } : a)
+    })
+  }
+
+  const removeAlternative = (id: string) => {
+    onChange({
+      ...block,
+      alternatives: (block.alternatives ?? []).filter(a => a.id !== id)
+    })
   }
 
   return (
@@ -102,19 +121,14 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
           {showNameSug && (
             <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
               {nameSuggestions.map(mix => (
-                <div
-                  key={mix.id}
-                  onMouseDown={() => selectMix(mix)}
-                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                >
+                <div key={mix.id} onMouseDown={() => selectMix(mix)}
+                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
                   <span className="text-gray-800 font-medium text-sm">{mix.name}</span>
                   <span className="text-xs text-gray-400 bg-gray-100 rounded px-2 py-0.5">{mix.category}</span>
                 </div>
               ))}
             </div>
           )}
-
-          {/* 빠른 선택 칩 */}
           <div className="flex flex-wrap gap-1.5 mt-2">
             {QUICK_MIXES.map(name => {
               const mix = MIX_DB.find(m => m.name === name)
@@ -134,8 +148,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
         {/* ── 2. 구호 직접 조립 ── */}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-semibold text-gray-400">구호 조립</span>
-
-          {/* 단어 입력 */}
           <div className="flex gap-2 items-center">
             <input
               ref={wordInputRef}
@@ -146,8 +158,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
               className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300 shadow-sm"
             />
           </div>
-
-          {/* 다음 단어 추천 */}
           {nextTokens.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {nextTokens.map((token, i) => (
@@ -158,8 +168,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
               ))}
             </div>
           )}
-
-          {/* 완성된 구호 textarea */}
           <textarea
             value={block.text}
             onChange={e => onChange({ ...block, text: e.target.value })}
@@ -168,6 +176,35 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
             className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-red-500 font-bold text-sm outline-none focus:border-gray-400 resize-none leading-relaxed placeholder:text-gray-200 shadow-sm"
           />
         </div>
+
+        {/* ── 3. 또는 (alternatives) ── */}
+        {(block.alternatives ?? []).length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-gray-100 pt-3">
+            {(block.alternatives ?? []).map((alt, i) => (
+              <div key={alt.id} className="flex items-start gap-2">
+                <span className="text-xs font-bold text-orange-400 mt-2.5 shrink-0">또는</span>
+                <textarea
+                  value={alt.text}
+                  onChange={e => updateAlternative(alt.id, e.target.value)}
+                  placeholder="대체 구호 입력"
+                  rows={Math.max(2, alt.text.split('\n').length + 1)}
+                  className="flex-1 bg-white border border-orange-200 rounded-lg px-3 py-2 text-red-500 font-bold text-sm outline-none focus:border-orange-400 resize-none leading-relaxed placeholder:text-orange-200 shadow-sm"
+                />
+                <button onClick={() => removeAlternative(alt.id)}
+                  className="text-xs text-gray-300 hover:text-red-400 mt-2.5 shrink-0 transition-colors">
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={addAlternative}
+          className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-500 transition-colors self-start">
+          <span className="w-4 h-4 rounded-full border border-orange-300 flex items-center justify-center text-[10px]">+</span>
+          또는 추가
+        </button>
 
       </div>
     </BlockWrapper>

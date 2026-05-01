@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   const sheets = await prisma.callSheet.findMany({
     where: { userId: user.id },
     orderBy: { updatedAt: 'desc' },
+    include: { tags: { include: { tag: true } } },
   })
   return NextResponse.json(sheets)
 }
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
     })
 
     const body = await req.json()
+    const tagNames: string[] = body.tags ?? []
+
     const sheet = await prisma.callSheet.create({
       data: {
         userId: user.id,
@@ -39,7 +42,19 @@ export async function POST(req: NextRequest) {
         songLang: body.songLang || null,
         isPublic: body.isPublic ?? false,
         blocks: body.blocks,
+        referenceVideos: body.referenceVideos ?? [],
+        tags: {
+          create: await Promise.all(tagNames.map(async name => {
+            const tag = await prisma.tag.upsert({
+              where: { name },
+              update: {},
+              create: { name },
+            })
+            return { tagId: tag.id }
+          }))
+        }
       },
+      include: { tags: { include: { tag: true } } },
     })
     return NextResponse.json(sheet)
   } catch (e) {

@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { Block } from '@/types'
+import { Block, ReferenceVideo } from '@/types'
 import Link from 'next/link'
 import ShareButton from '@/components/ShareButton'
 import type { Metadata } from 'next'
 import Comments from '@/components/Comments'
 import LikeButton from '@/components/LikeButton'
 import BookmarkButton from '@/components/BookmarkButton'
+import VideoEmbed from '@/components/VideoEmbed'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -51,12 +52,15 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
   const { id } = await params
   const sheet = await prisma.callSheet.findUnique({
     where: { id },
-    include: { user: true },
+    // ✅ tags 포함
+    include: { user: true, tags: { include: { tag: true } } },
   })
 
   if (!sheet || !sheet.isPublic) notFound()
 
   const blocks = sheet.blocks as unknown as Block[]
+  const referenceVideos = ((sheet as any).referenceVideos ?? []) as ReferenceVideo[]
+  const tags = sheet.tags.map(t => t.tag.name)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,14 +85,14 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-2">
             <h2 className="text-gray-900 font-bold text-2xl">{sheet.songTitle || '제목 없음'}</h2>
             {(sheet as any).songLang && (
-  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
-    (sheet as any).songLang === 'ko'
-      ? 'border-blue-200 text-blue-400'
-      : 'border-red-200 text-red-400'
-  }`}>
-    {(sheet as any).songLang === 'ko' ? '한국 곡' : '일본 곡'}
-  </span>
-)}
+              <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+                (sheet as any).songLang === 'ko'
+                  ? 'border-blue-200 text-blue-400'
+                  : 'border-red-200 text-red-400'
+              }`}>
+                {(sheet as any).songLang === 'ko' ? '한국 곡' : '일본 곡'}
+              </span>
+            )}
           </div>
           <p className="text-xs text-gray-300 mt-1">
             {new Date(sheet.updatedAt).toLocaleDateString('ko-KR')} 업데이트
@@ -96,7 +100,28 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           {(sheet.user as any)?.nickname && (
             <p className="text-xs text-gray-400 mt-0.5">by {(sheet.user as any).nickname}</p>
           )}
+          {/* ✅ 태그 */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {tags.map(tag => (
+                <Link key={tag} href={`/?tag=${encodeURIComponent(tag)}`}
+                  className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 transition-colors">
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* 곡 전체 참고영상 */}
+        {referenceVideos.length > 0 && (
+          <div className="mb-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-4">
+            <p className="text-xs font-medium text-gray-400">🎬 참고영상</p>
+            {referenceVideos.map((v, i) => (
+              <VideoEmbed key={i} url={v.url} label={v.label} compact={false} />
+            ))}
+          </div>
+        )}
 
         <div className="bg-white rounded-xl p-6 shadow border border-gray-100 font-sans">
           {blocks.map(block => (
@@ -116,10 +141,22 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
                   </div>
                 ) : null
               )}
-              {block.type === 'mix' && block.text && (
-                <p className="text-red-600 font-bold text-sm leading-relaxed whitespace-pre-line">
-                  {block.text}
-                </p>
+              {block.type === 'mix' && (
+                <div>
+                  {block.text && (
+                    <p className="text-red-600 font-bold text-sm leading-relaxed whitespace-pre-line">
+                      {block.text}
+                    </p>
+                  )}
+                  {(block.alternatives ?? []).map(alt => (
+                    <div key={alt.id} className="mt-1">
+                      <span className="text-xs font-bold text-orange-400">또는</span>
+                      <p className="text-red-600 font-bold text-sm leading-relaxed whitespace-pre-line">
+                        {alt.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               )}
               {block.type === 'interlude' && (
                 <div className="my-2">
@@ -132,6 +169,21 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
                     </p>
                   )}
                 </div>
+              )}
+              {block.type === 'performance' && (
+                <div className="my-2 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded">
+                    {block.performanceType === '기타' && block.customLabel
+                      ? block.customLabel
+                      : block.performanceType}
+                  </span>
+                  {block.memo && (
+                    <span className="text-xs text-gray-400">{block.memo}</span>
+                  )}
+                </div>
+              )}
+              {block.referenceUrl && (
+                <VideoEmbed url={block.referenceUrl} compact={false} />
               )}
             </div>
           ))}

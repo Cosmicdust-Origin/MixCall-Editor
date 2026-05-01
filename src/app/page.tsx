@@ -6,7 +6,7 @@ import AuthButton from '@/components/AuthButton'
 import SearchBar from '@/components/SearchBar'
 import SheetCard from '@/components/SheetCard'
 
-async function getPublicSheets(query?: string) {
+async function getPublicSheets(query?: string, tag?: string) {
   try {
     const sheets = await prisma.callSheet.findMany({
       where: {
@@ -16,11 +16,18 @@ async function getPublicSheets(query?: string) {
             { artistName: { contains: query, mode: 'insensitive' } },
             { songTitle: { contains: query, mode: 'insensitive' } },
           ]
-        } : {})
+        } : {}),
+        ...(tag ? {
+          tags: { some: { tag: { name: { equals: tag, mode: 'insensitive' } } } }
+        } : {}),
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
-      include: { user: true, _count: { select: { likes: true } } },
+      include: {
+        user: true,
+        _count: { select: { likes: true } },
+        tags: { include: { tag: true } },
+      },
     })
     return sheets
   } catch {
@@ -31,10 +38,10 @@ async function getPublicSheets(query?: string) {
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string, tag?: string }>
 }) {
-  const { q } = await searchParams
-  const sheets = await getPublicSheets(q)
+  const { q, tag } = await searchParams
+  const sheets = await getPublicSheets(q, tag)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,9 +64,23 @@ export default async function HomePage({
       <main className="max-w-2xl mx-auto px-4 py-6">
         <SearchBar defaultValue={q} />
 
+        {/* 태그 필터 표시 */}
+        {tag && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs text-gray-400">태그 필터:</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+              #{tag}
+            </span>
+            <Link href={q ? `/?q=${encodeURIComponent(q)}` : '/'}
+              className="text-xs text-gray-400 hover:text-red-400 transition-colors">
+              ✕ 필터 해제
+            </Link>
+          </div>
+        )}
+
         <div className="mb-6">
           <h2 className="font-bold text-gray-800 mb-3">
-            {q ? `"${q}" 검색 결과` : '📋 등록된 콜/믹스 표'}
+            {tag ? `#${tag} 콜/믹스 표` : q ? `"${q}" 검색 결과` : '📋 등록된 콜/믹스 표'}
             <span className="text-sm font-normal text-gray-400 ml-2">{sheets.length}개</span>
           </h2>
 

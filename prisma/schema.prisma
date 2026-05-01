@@ -38,22 +38,40 @@ model Song {
   callSheets CallSheet[]
 }
 
+model Tag {
+  id         String          @id @default(cuid())
+  name       String          @unique
+  createdAt  DateTime        @default(now())
+  callSheets CallSheetTag[]
+}
+
+model CallSheetTag {
+  callSheetId String
+  tagId       String
+  callSheet   CallSheet @relation(fields: [callSheetId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([callSheetId, tagId])
+}
+
 model CallSheet {
-  id         String    @id @default(cuid())
-  userId     String
-  user       Profile   @relation(fields: [userId], references: [id])
-  songId     String?
-  song       Song?     @relation(fields: [songId], references: [id])
-  artistName String?
-  songTitle  String?
-  songLang   String?
-  isPublic   Boolean   @default(false)
-  blocks     Json
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  comments   Comment[]
-  bookmarks  Bookmark[]
-  likes      Like[]
+  id              String         @id @default(cuid())
+  userId          String
+  user            Profile        @relation(fields: [userId], references: [id])
+  songId          String?
+  song            Song?          @relation(fields: [songId], references: [id])
+  artistName      String?
+  songTitle       String?
+  songLang        String?
+  isPublic        Boolean        @default(false)
+  blocks          Json
+  referenceVideos Json           @default("[]")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  comments        Comment[]
+  bookmarks       Bookmark[]
+  likes           Like[]
+  tags            CallSheetTag[]
 }
 
 model MixPreset {
