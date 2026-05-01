@@ -16,6 +16,9 @@ interface Props {
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
+  onInsertPerformance: () => void
+  referenceUrl?: string
+  onReferenceUrlChange: (url: string) => void
 }
 
 export default function LyricBlockComp({ block, language, onChange, onSplit, ...wrapperProps }: Props) {
