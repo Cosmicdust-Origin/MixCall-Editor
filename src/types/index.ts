@@ -1,3 +1,5 @@
+export type Language = 'jp' | 'ko';
+
 // ─── 블록 공통 ───────────────────────────────────────────────
 export interface BaseBlock {
   id: string;
