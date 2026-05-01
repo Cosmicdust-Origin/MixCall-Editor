@@ -27,18 +27,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     create: { name: name.trim() },
   })
 
-  // 이미 있으면 무시
   await prisma.callSheetTag.upsert({
     where: { callSheetId_tagId: { callSheetId: id, tagId: tag.id } },
     update: {},
     create: { callSheetId: id, tagId: tag.id },
   })
 
-  const updated = await prisma.callSheet.findUnique({
-    where: { id },
-    include: { tags: { include: { tag: true } } },
+  // findUnique 제거 — 현재 태그 목록을 callSheetTag에서 바로 조회
+  const currentTags = await prisma.callSheetTag.findMany({
+    where: { callSheetId: id },
+    include: { tag: true },
   })
-  return NextResponse.json(updated?.tags.map(t => t.tag.name) ?? [])
+  return NextResponse.json(currentTags.map(t => t.tag.name))
 }
 
 // DELETE /api/sheets/[id]/tags — 태그 삭제 (작성자만)
@@ -59,9 +59,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     where: { callSheetId_tagId: { callSheetId: id, tagId: tag.id } },
   })
 
-  const updated = await prisma.callSheet.findUnique({
-    where: { id },
-    include: { tags: { include: { tag: true } } },
+  // findUnique 제거 — 현재 태그 목록을 callSheetTag에서 바로 조회
+  const currentTags = await prisma.callSheetTag.findMany({
+    where: { callSheetId: id },
+    include: { tag: true },
   })
-  return NextResponse.json(updated?.tags.map(t => t.tag.name) ?? [])
+  return NextResponse.json(currentTags.map(t => t.tag.name))
 }
