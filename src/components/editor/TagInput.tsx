@@ -22,12 +22,14 @@ export default function TagInput({ tags, onChange }: Props) {
   useEffect(() => {
     const q = input.trim()
     if (!q) { setSuggestions([]); setShowSug(false); return }
-    fetch(`/api/tags?q=${encodeURIComponent(q)}`)
-      .then(r => r.json())
-      .then(data => {
-        setSuggestions(data)
-        setShowSug(data.length > 0)
-      })
+    
+    const timer = setTimeout(() => {
+      fetch(`/api/tags?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => { setSuggestions(data); setShowSug(data.length > 0) })
+    }, 300) // 300ms 대기 후 호출
+
+    return () => clearTimeout(timer)
   }, [input])
 
   const addTag = (name: string) => {
