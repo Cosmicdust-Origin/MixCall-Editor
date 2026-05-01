@@ -16,6 +16,9 @@ interface Props {
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
+  onInsertPerformance: () => void
+  referenceUrl?: string
+  onReferenceUrlChange: (url: string) => void
 }
 
 const LABELS = ['전주', '간주', '간주 1', '간주 2', '아웃트로', '엔딩']
