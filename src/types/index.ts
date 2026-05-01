@@ -35,7 +35,8 @@ export interface MixBlock extends BaseBlock {
 // ─── 간주 블록 ────────────────────────────────────────────────
 export interface InterludeBlock extends BaseBlock {
   type: 'interlude';
-  label: string; // 전주 / 간주 / 아웃트로 등
+  label: string;
+  text?: string;  // 추가
   mixName?: string;
   tokens?: string[];
 }
