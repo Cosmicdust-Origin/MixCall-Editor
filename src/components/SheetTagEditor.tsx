@@ -22,34 +22,33 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])
   const [showSug, setShowSug] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      setAccessToken(session?.access_token ?? null)
     })
   }, [])
 
   useEffect(() => {
     const q = input.trim()
     if (!q) { setSuggestions([]); setShowSug(false); return }
-    
     const timer = setTimeout(() => {
       fetch(`/api/tags?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(data => { setSuggestions(data); setShowSug(data.length > 0) })
-    }, 300) // 300ms 대기 후 호출
-
+    }, 300)
     return () => clearTimeout(timer)
   }, [input])
 
   const addTag = async (name: string) => {
     const trimmed = name.trim()
-    if (!trimmed || tags.includes(trimmed)) { setInput(''); setShowSug(false); return }
-    const { data: { session } } = await supabase.auth.getSession()
+    if (!trimmed || tags.includes(trimmed) || !accessToken) { setInput(''); setShowSug(false); return }
     const res = await fetch(`/api/sheets/${sheetId}/tags`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ name: trimmed }),
     })
     const updated = await res.json()
@@ -60,10 +59,10 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
   }
 
   const removeTag = async (name: string) => {
-    const { data: { session } } = await supabase.auth.getSession()
+    if (!accessToken) return
     const res = await fetch(`/api/sheets/${sheetId}/tags`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ name }),
     })
     const updated = await res.json()
@@ -74,14 +73,12 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
 
   return (
     <div className="mt-2">
-      {/* 태그 목록 */}
       <div className="flex flex-wrap gap-1.5">
         {tags.map(tag => (
           <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
             <Link href={`/?tag=${encodeURIComponent(tag)}`} className="hover:text-gray-700">
               #{tag}
             </Link>
-            {/* 삭제는 작성자만 */}
             {isOwner && (
               <button onClick={() => removeTag(tag)}
                 className="text-gray-300 hover:text-red-400 transition-colors leading-none">
@@ -91,7 +88,6 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
           </span>
         ))}
 
-        {/* 태그 추가는 로그인한 누구나 */}
         {user && (
           <div className="relative">
             <input
