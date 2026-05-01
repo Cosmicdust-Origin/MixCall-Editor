@@ -8,6 +8,7 @@ import Comments from '@/components/Comments'
 import LikeButton from '@/components/LikeButton'
 import BookmarkButton from '@/components/BookmarkButton'
 import VideoEmbed from '@/components/VideoEmbed'
+import SheetTagEditor from '@/components/SheetTagEditor'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -101,16 +102,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
             <p className="text-xs text-gray-400 mt-0.5">by {(sheet.user as any).nickname}</p>
           )}
           {/* ✅ 태그 */}
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {tags.map(tag => (
-                <Link key={tag} href={`/?tag=${encodeURIComponent(tag)}`}
-                  className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 transition-colors">
-                  #{tag}
-                </Link>
-              ))}
-            </div>
-          )}
+          <SheetTagEditor sheetId={id} initialTags={tags} ownerId={sheet.userId} />
         </div>
 
         {/* 곡 전체 참고영상 */}
