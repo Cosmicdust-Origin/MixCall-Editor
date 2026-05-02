@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { supabaseAdmin } from '@/lib/supabaseServer'
+import { verifyToken } from '@/lib/supabaseServer'
 
-async function getUser(req: NextRequest) {
+async function getUserId(req: NextRequest): Promise<string | null> {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return null
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  return user
+  const result = await verifyToken(token)
+  return result?.sub ?? null
 }
 
-// POST /api/sheets/[id]/tags — 태그 추가 (누구나)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+  const userId = await getUserId(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })
   if (!sheet || !sheet.isPublic) return NextResponse.json({ error: '없음' }, { status: 404 })
@@ -33,7 +32,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     create: { callSheetId: id, tagId: tag.id },
   })
 
-  // findUnique 제거 — 현재 태그 목록을 callSheetTag에서 바로 조회
   const currentTags = await prisma.callSheetTag.findMany({
     where: { callSheetId: id },
     include: { tag: true },
@@ -41,14 +39,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json(currentTags.map(t => t.tag.name))
 }
 
-// DELETE /api/sheets/[id]/tags — 태그 삭제 (작성자만)
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+  const userId = await getUserId(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })
-  if (!sheet || sheet.userId !== user.id)
+  if (!sheet || sheet.userId !== userId)
     return NextResponse.json({ error: '권한 없음' }, { status: 403 })
 
   const { name } = await req.json()
@@ -59,7 +56,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     where: { callSheetId_tagId: { callSheetId: id, tagId: tag.id } },
   })
 
-  // findUnique 제거 — 현재 태그 목록을 callSheetTag에서 바로 조회
   const currentTags = await prisma.callSheetTag.findMany({
     where: { callSheetId: id },
     include: { tag: true },

@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.104.1",
     "@vercel/analytics": "^2.0.1",
     "html-to-image": "^1.11.13",
+    "jose": "^6.2.3",
     "kuromoji": "^0.1.2",
     "next": "16.2.4",
     "pg": "^8.20.0",
