@@ -6,8 +6,8 @@ import { MIX_DB, getSuggestions, getNextTokens } from '@/lib/mixDb'
 import BlockWrapper from './BlockWrapper'
 
 interface Props {
-  block: InterludeBlock
-  onChange: (block: InterludeBlock) => void
+  block: MixBlock
+  onChange: (block: MixBlock) => void
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void
