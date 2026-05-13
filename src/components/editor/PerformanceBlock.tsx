@@ -4,8 +4,8 @@ import { PerformanceBlock, PerformanceType } from '@/types'
 import BlockWrapper from './BlockWrapper'
 
 interface Props {
-  block: InterludeBlock
-  onChange: (block: InterludeBlock) => void
+  block: PerformanceBlock
+  onChange: (block: PerformanceBlock) => void
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void
