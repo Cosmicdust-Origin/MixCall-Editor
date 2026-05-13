@@ -45,6 +45,30 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
     onChange({ ...block, lines: next })
   }
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, lineId: string, field: 'jp' | 'ko') => {
+    const text = e.clipboardData.getData('text')
+    const pasted = text.split('\n').map(s => s.trim()).filter(Boolean)
+    if (pasted.length <= 1) return // 줄바꿈 없으면 기본 붙여넣기
+
+    e.preventDefault()
+    const currentIdx = block.lines.findIndex(l => l.id === lineId)
+    const newLines = [...block.lines]
+
+    // 현재 줄에 첫 번째 줄 삽입
+    newLines[currentIdx] = { ...newLines[currentIdx], [field]: pasted[0] }
+
+    // 나머지 줄은 현재 위치 다음에 추가
+    const extraLines: LyricLine[] = pasted.slice(1).map(text => ({
+      id: crypto.randomUUID(),
+      jp: field === 'jp' ? text : '',
+      hira: '',
+      ko: field === 'ko' ? text : '',
+    }))
+
+    newLines.splice(currentIdx + 1, 0, ...extraLines)
+    onChange({ ...block, lines: newLines })
+  }
+
   return (
     <BlockWrapper type="lyric" {...wrapperProps}>
       <div className="flex flex-col gap-3">
@@ -55,6 +79,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                 <input
                   value={language === 'jp' ? line.jp : line.ko}
                   onChange={e => updateLine(line.id, language === 'jp' ? 'jp' : 'ko', e.target.value)}
+                  onPaste={e => handlePaste(e, line.id, language === 'jp' ? 'jp' : 'ko')}
                   placeholder={language === 'jp' ? '일본어 가사 입력...' : '한국어 가사 입력...'}
                   className="flex-1 w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300"
                 />
@@ -62,6 +87,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                   <input
                     value={line.ko}
                     onChange={e => updateLine(line.id, 'ko', e.target.value)}
+                    onPaste={e => handlePaste(e, line.id, 'ko')}
                     placeholder="한국어 발음 (선택)"
                     className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-blue-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
                   />
@@ -83,7 +109,6 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
               )}
             </div>
 
-            {/* 줄 사이 분리 버튼 */}
             {idx < block.lines.length - 1 && (
               <div className="relative h-6 flex items-center justify-center my-1">
                 <div className="absolute inset-x-0 top-1/2 border-t border-gray-100" />

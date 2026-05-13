@@ -42,6 +42,23 @@ export default function BlockList({ blocks, language, onChange }: Props) {
     onChange(next)
   }
 
+  const duplicateBlock = (id: string) => {
+    const block = blocks.find(b => b.id === id)
+    if (!block) return
+    // lines 배열이 있으면 각 line의 id도 새로 만들어줘야 함
+    const cloned: Block = block.type === 'lyric'
+      ? {
+          ...(block as LyricBlock),
+          id: crypto.randomUUID(),
+          lines: (block as LyricBlock).lines.map(l => ({ ...l, id: crypto.randomUUID() }))
+        }
+      : { ...block, id: crypto.randomUUID() }
+    const idx = blocks.findIndex(b => b.id === id)
+    const next = [...blocks]
+    next.splice(idx + 1, 0, cloned)
+    onChange(next)
+  }
+
   const splitBlock = (blockId: string, lineIdx: number) => {
     const block = blocks.find(b => b.id === blockId)
     if (!block || block.type !== 'lyric') return
@@ -57,9 +74,27 @@ export default function BlockList({ blocks, language, onChange }: Props) {
     onChange(next)
   }
 
+  const mergeWithPrev = (id: string) => {
+    const idx = blocks.findIndex(b => b.id === id)
+    if (idx <= 0) return
+    const prev = blocks[idx - 1]
+    const curr = blocks[idx]
+    if (prev.type !== 'lyric' || curr.type !== 'lyric') return
+    const merged: LyricBlock = {
+      ...prev,
+      lines: [...(prev as LyricBlock).lines, ...(curr as LyricBlock).lines]
+    }
+    const next = [...blocks]
+    next.splice(idx - 1, 2, merged)
+    onChange(next)
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {blocks.map((block, idx) => {
+        const prevBlock = idx > 0 ? blocks[idx - 1] : null
+        const canMergeWithPrev = block.type === 'lyric' && prevBlock?.type === 'lyric'
+
         const commonProps = {
           isFirst: idx === 0,
           isLast: idx === blocks.length - 1,
@@ -68,6 +103,8 @@ export default function BlockList({ blocks, language, onChange }: Props) {
           onMoveUp: () => moveBlock(block.id, 'up'),
           onMoveDown: () => moveBlock(block.id, 'down'),
           onDelete: () => removeBlock(block.id),
+          onDuplicate: () => duplicateBlock(block.id),
+          onMergeWithPrev: canMergeWithPrev ? () => mergeWithPrev(block.id) : undefined,
           onInsertLyric: () => insertAfter(block.id, {
             id: crypto.randomUUID(), type: 'lyric',
             lines: [{ id: crypto.randomUUID(), jp: '', hira: '', ko: '' }]

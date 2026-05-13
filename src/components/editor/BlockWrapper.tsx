@@ -12,6 +12,8 @@ interface Props {
   onMoveUp: () => void
   onMoveDown: () => void
   onDelete: () => void
+  onDuplicate: () => void
+  onMergeWithPrev?: () => void
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
@@ -22,7 +24,7 @@ interface Props {
 export default function BlockWrapper({
   type, isFirst, isLast,
   referenceUrl, onReferenceUrlChange,
-  onMoveUp, onMoveDown, onDelete,
+  onMoveUp, onMoveDown, onDelete, onDuplicate, onMergeWithPrev,
   onInsertLyric, onInsertMix, onInsertInterlude, onInsertPerformance,
   children
 }: Props) {
@@ -73,11 +75,17 @@ export default function BlockWrapper({
         />
       </div>
 
-      <div className={`flex gap-1 px-4 pb-3 transition-opacity ${hover ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`flex gap-1 px-4 pb-3 flex-wrap transition-opacity ${hover ? 'opacity-100' : 'opacity-0'}`}>
         <button onClick={onMoveUp} disabled={isFirst}
           className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 disabled:opacity-20 hover:text-gray-600 hover:border-gray-300">↑</button>
         <button onClick={onMoveDown} disabled={isLast}
           className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 disabled:opacity-20 hover:text-gray-600 hover:border-gray-300">↓</button>
+        <button onClick={onDuplicate}
+          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300">복제</button>
+        {onMergeWithPrev && (
+          <button onClick={onMergeWithPrev}
+            className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300">↑ 합치기</button>
+        )}
         <button onClick={onDelete}
           className="text-xs px-2 py-1 rounded border border-red-200 text-red-300 hover:text-red-500 hover:border-red-300">✕ 삭제</button>
         <span className="flex-1" />
