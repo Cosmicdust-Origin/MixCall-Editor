@@ -43,14 +43,17 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
   }
 
   const selectMix = (mix: MixPreset) => {
-    onChange({ ...block, text: mix.text, mixPresetId: mix.id })
-    setCurrentTokens(mix.tokens)
-    setNextTokens(getNextTokens('', mix.tokens))
-    setNameQuery('')
-    setNameSuggestions([])
-    setShowNameSug(false)
-    wordInputRef.current?.focus()
+  if (block.text && block.text.trim()) {
+    if (!confirm('입력된 구호가 있습니다. 선택한 믹스로 교체할까요?')) return
   }
+  onChange({ ...block, text: mix.text, mixPresetId: mix.id })
+  setCurrentTokens(mix.tokens)
+  setNextTokens(getNextTokens('', mix.tokens))
+  setNameQuery('')
+  setNameSuggestions([])
+  setShowNameSug(false)
+  wordInputRef.current?.focus()
+}
 
   const handleWordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ' ' || e.key === 'Enter') {
