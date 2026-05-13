@@ -46,7 +46,7 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
   if (block.text && block.text.trim()) {
     if (!confirm('입력된 구호가 있습니다. 선택한 믹스로 교체할까요?')) return
   }
-  onChange({ ...block, text: mix.text, mixPresetId: mix.id })
+  onChange({ ...block, text: mix.text })
   setCurrentTokens(mix.tokens)
   setNextTokens(getNextTokens('', mix.tokens))
   setNameQuery('')
