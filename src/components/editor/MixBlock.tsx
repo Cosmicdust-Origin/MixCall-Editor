@@ -43,8 +43,9 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
   }
 
   const selectMix = (mix: MixPreset) => {
-  if (block.text && block.text.trim()) {
-    if (!confirm('입력된 구호가 있습니다. 선택한 믹스로 교체할까요?')) return
+  const currentText = block.text?.trim()
+  if (currentText) {
+    if (!window.confirm('입력된 구호가 있습니다. 선택한 믹스로 교체할까요?')) return
   }
   onChange({ ...block, text: mix.text, mixPresetId: mix.id })
   setCurrentTokens(mix.tokens)
