@@ -13,6 +13,8 @@ interface Props {
   onMoveUp: () => void
   onMoveDown: () => void
   onDelete: () => void
+  onDuplicate: () => void
+  onMergeWithPrev?: () => void
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void

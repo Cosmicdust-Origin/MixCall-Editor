@@ -6,13 +6,15 @@ import { MIX_DB, getSuggestions, getNextTokens } from '@/lib/mixDb'
 import BlockWrapper from './BlockWrapper'
 
 interface Props {
-  block: MixBlock
-  onChange: (block: MixBlock) => void
+  block: InterludeBlock
+  onChange: (block: InterludeBlock) => void
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void
   onMoveDown: () => void
   onDelete: () => void
+  onDuplicate: () => void
+  onMergeWithPrev?: () => void
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
