@@ -50,7 +50,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
           </p>
         )}
         {compact ? (
-          
+          <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
