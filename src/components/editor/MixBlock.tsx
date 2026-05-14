@@ -32,6 +32,7 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
   const [wordInput, setWordInput] = useState('')
   const [currentTokens, setCurrentTokens] = useState<string[]>([])
   const [nextTokens, setNextTokens] = useState<string[]>([])
+  const [pendingMix, setPendingMix] = useState<MixPreset | null>(null) // ✅ 확인 대기 중인 믹스
   const wordInputRef = useRef<HTMLInputElement>(null)
 
   const handleNameQuery = (val: string) => {
@@ -43,18 +44,29 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
   }
 
   const selectMix = (mix: MixPreset) => {
-  const currentText = block.text?.trim()
-  if (currentText) {
-    if (!window.confirm('입력된 구호가 있습니다. 선택한 믹스로 교체할까요?')) return
+    const currentText = block.text?.trim()
+    if (currentText) {
+      // 기존 내용 있으면 확인 다이얼로그 표시
+      setPendingMix(mix)
+      setShowNameSug(false)
+      return
+    }
+    applyMix(mix, 'replace')
   }
-  onChange({ ...block, text: mix.text, mixPresetId: mix.id })
-  setCurrentTokens(mix.tokens)
-  setNextTokens(getNextTokens('', mix.tokens))
-  setNameQuery('')
-  setNameSuggestions([])
-  setShowNameSug(false)
-  wordInputRef.current?.focus()
-}
+
+  const applyMix = (mix: MixPreset, mode: 'replace' | 'append') => {
+    const newText = mode === 'append' && block.text?.trim()
+      ? block.text + '\n' + mix.text
+      : mix.text
+    onChange({ ...block, text: newText, mixPresetId: mix.id })
+    setCurrentTokens(mix.tokens)
+    setNextTokens(getNextTokens('', mix.tokens))
+    setNameQuery('')
+    setNameSuggestions([])
+    setShowNameSug(false)
+    setPendingMix(null)
+    wordInputRef.current?.focus()
+  }
 
   const handleWordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === ' ' || e.key === 'Enter') {
@@ -84,7 +96,6 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
     wordInputRef.current?.focus()
   }
 
-  // ── alternatives 핸들러 ──
   const addAlternative = () => {
     const alts = block.alternatives ?? []
     onChange({
@@ -110,6 +121,32 @@ export default function MixBlockComp({ block, onChange, ...wrapperProps }: Props
   return (
     <BlockWrapper type="mix" {...wrapperProps}>
       <div className="flex flex-col gap-3">
+
+        {/* ── 교체/추가 확인 다이얼로그 ── */}
+        {pendingMix && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2.5 flex flex-col gap-2">
+            <p className="text-xs text-orange-700 font-medium">
+              기존 내용이 있어요. <span className="font-bold">{pendingMix.name}</span> 을 어떻게 할까요?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => applyMix(pendingMix, 'replace')}
+                className="text-xs px-3 py-1 rounded border border-orange-300 text-orange-600 hover:bg-orange-100 transition-colors">
+                교체
+              </button>
+              <button
+                onClick={() => applyMix(pendingMix, 'append')}
+                className="text-xs px-3 py-1 rounded border border-orange-300 text-orange-600 hover:bg-orange-100 transition-colors">
+                이어붙이기
+              </button>
+              <button
+                onClick={() => setPendingMix(null)}
+                className="text-xs px-3 py-1 rounded border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors ml-auto">
+                취소
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── 1. 믹스명 검색 ── */}
         <div className="relative">

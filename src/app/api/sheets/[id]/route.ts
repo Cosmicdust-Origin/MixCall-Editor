@@ -42,10 +42,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       artistName: body.artistName ?? sheet.artistName,
       songTitle: body.songTitle ?? sheet.songTitle,
       songLang: body.songLang !== undefined ? body.songLang : sheet.songLang,
+      editorLanguage: body.editorLanguage !== undefined ? body.editorLanguage : sheet.editorLanguage,
       isPublic: body.isPublic ?? sheet.isPublic,
       blocks: body.blocks ?? sheet.blocks,
       referenceVideos: body.referenceVideos ?? sheet.referenceVideos,
-      // 태그가 body에 포함된 경우에만 업데이트
       ...(tagNames !== undefined && {
         tags: {
           deleteMany: {},

@@ -45,6 +45,7 @@ export default function EditorPage() {
           setSongTitle(data.songTitle || '')
           setIsPublic(data.isPublic)
           setSongLang(data.songLang || null)
+          setLanguage(data.editorLanguage || 'jp') // ✅ 언어 설정 복원
           setReferenceVideos(data.referenceVideos ?? [])
           setTags((data.tags ?? []).map((t: any) => t.tag.name))
           setSavedId(id)
@@ -70,7 +71,7 @@ export default function EditorPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const body = { artistName, songTitle, songLang, isPublic, blocks, referenceVideos, tags }
+      const body = { artistName, songTitle, songLang, editorLanguage: language, isPublic, blocks, referenceVideos, tags } // ✅ editorLanguage 포함
 
       if (savedId) {
         await fetch(`/api/sheets/${savedId}`, {
@@ -162,12 +163,12 @@ export default function EditorPage() {
           </div>
 
           <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
-            <button onClick={() => setSongLang('ko')}
-              className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'ko' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-              🇰🇷 한국 곡</button>
-            <button onClick={() => setSongLang('jp')}
+            <button onClick={() => { setSongLang('jp'); if (!savedId) setLanguage('jp') }}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'jp' ? 'bg-red-100 text-red-500' : 'text-gray-500 hover:bg-gray-50'}`}>
               🇯🇵 일본 곡</button>
+            <button onClick={() => { setSongLang('ko'); if (!savedId) setLanguage('ko') }}
+              className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'ko' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              🇰🇷 한국 곡</button>
             <button onClick={() => setSongLang(null)}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === null ? 'bg-gray-200 text-gray-600' : 'text-gray-500 hover:bg-gray-50'}`}>
               미분류</button>
@@ -256,7 +257,6 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
           {copied ? '✓ 복사됨' : '📋 텍스트 복사'}</button>
       </div>
 
-      {/* 태그 */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {tags.map(tag => (
@@ -267,7 +267,6 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
         </div>
       )}
 
-      {/* 곡 전체 참고영상 */}
       {referenceVideos.length > 0 && (
         <div className="mb-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-4">
           <p className="text-xs font-medium text-gray-400">🎬 참고영상</p>

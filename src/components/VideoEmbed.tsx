@@ -5,17 +5,14 @@ import { useMemo } from 'react';
 interface VideoEmbedProps {
   url: string;
   label?: string;
-  compact?: boolean; // 블록 내부용 소형 표시
+  compact?: boolean;
 }
-
-// ─── URL 파싱 유틸 ────────────────────────────────────────────
 
 function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: string } {
   try {
     const u = new URL(url);
     const host = u.hostname.replace('www.', '');
 
-    // YouTube
     if (host === 'youtube.com' || host === 'youtu.be') {
       let videoId: string | null = null;
       if (host === 'youtu.be') {
@@ -30,7 +27,6 @@ function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: st
       if (videoId) return { type: 'youtube', id: videoId };
     }
 
-    // Twitter / X
     if (host === 'twitter.com' || host === 'x.com') {
       return { type: 'twitter' };
     }
@@ -40,8 +36,6 @@ function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: st
     return { type: 'other' };
   }
 }
-
-// ─── 컴포넌트 ─────────────────────────────────────────────────
 
 export default function VideoEmbed({ url, label, compact = false }: VideoEmbedProps) {
   const parsed = useMemo(() => parseUrl(url), [url]);
@@ -56,20 +50,18 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
           </p>
         )}
         {compact ? (
-          // 블록 내부용: 링크 카드만 표시 (임베드는 에디터 무거워짐)
-          <a
+          
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-red-400 hover:text-red-300 
-                       bg-red-950/30 border border-red-900/40 rounded px-2 py-1 transition-colors"
+            className="inline-flex items-center gap-2 text-xs text-red-600 hover:text-red-700
+                       bg-red-50 border border-red-200 rounded px-2 py-1 transition-colors"
           >
             <YouTubeIcon />
             <span className="truncate max-w-[200px]">{url}</span>
             <ExternalLinkIcon />
           </a>
         ) : (
-          // 상세 페이지용: 풀 임베드
           <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
             <iframe
               className="absolute inset-0 w-full h-full rounded-lg"
@@ -93,12 +85,12 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
             <span>{label}</span>
           </p>
         )}
-        <a
+        
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 
-                     bg-sky-950/30 border border-sky-900/40 rounded px-2 py-1 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-sky-600 hover:text-sky-700
+                     bg-sky-50 border border-sky-200 rounded px-2 py-1 transition-colors"
         >
           <XIcon />
           <span className="truncate max-w-[240px]">{url}</span>
@@ -108,18 +100,17 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
     );
   }
 
-  // 기타 링크
   return (
     <div className={compact ? 'mt-2' : 'mt-3'}>
       {label && (
         <p className="text-xs text-gray-400 mb-1">🔗 {label}</p>
       )}
-      <a
+      
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-xs text-gray-400 hover:text-gray-300 
-                   bg-gray-800/40 border border-gray-700/40 rounded px-2 py-1 transition-colors"
+        className="inline-flex items-center gap-2 text-xs text-gray-600 hover:text-gray-700
+                   bg-gray-100 border border-gray-200 rounded px-2 py-1 transition-colors"
       >
         <span className="truncate max-w-[240px]">{url}</span>
         <ExternalLinkIcon />
@@ -127,8 +118,6 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
     </div>
   );
 }
-
-// ─── 아이콘 ──────────────────────────────────────────────────
 
 function YouTubeIcon() {
   return (

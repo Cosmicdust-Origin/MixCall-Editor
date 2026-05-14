@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
         artistName: body.artistName || null,
         songTitle: body.songTitle || null,
         songLang: body.songLang || null,
+        editorLanguage: body.editorLanguage || null,
         isPublic: body.isPublic ?? false,
         blocks: body.blocks,
         referenceVideos: body.referenceVideos ?? [],
