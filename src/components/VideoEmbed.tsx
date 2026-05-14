@@ -76,7 +76,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
     );
   }
 
-  if (parsed.type === 'twitter') {
+if (parsed.type === 'twitter') {
     return (
       <div className={compact ? 'mt-2' : 'mt-3'}>
         {label && (
@@ -85,7 +85,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
             <span>{label}</span>
           </p>
         )}
-        
+        <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
@@ -99,13 +99,12 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
       </div>
     );
   }
-
   return (
     <div className={compact ? 'mt-2' : 'mt-3'}>
       {label && (
         <p className="text-xs text-gray-400 mb-1">🔗 {label}</p>
       )}
-      
+      <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
