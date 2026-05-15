@@ -73,7 +73,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
 
   return (
     <BlockWrapper type="lyric" {...wrapperProps}>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
         {block.lines.map((line, idx) => (
           <div key={line.id}>
             <div className="flex gap-2 items-start">
@@ -112,7 +112,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
             </div>
 
             {idx < block.lines.length - 1 && (
-              <div className="relative h-4 flex items-center justify-center my-0.5">
+              <div className="relative h-4 flex items-center justify-center mt-1 mb-0">
                 <div className="absolute inset-x-0 top-1/2 border-t border-gray-100" />
                 <button
                   onClick={() => onSplit(idx + 1)}
