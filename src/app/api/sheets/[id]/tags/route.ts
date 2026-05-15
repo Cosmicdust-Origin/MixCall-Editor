@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/supabaseServer'
-
-async function getUserId(req: NextRequest): Promise<string | null> {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return null
-  const result = await verifyToken(token)
-  return result?.sub ?? null
-}
+import { getUserIdFromRequest } from '@/lib/supabaseServer'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const userId = await getUserId(req)
+  const userId = await getUserIdFromRequest(req)
   if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })
@@ -41,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const userId = await getUserId(req)
+  const userId = await getUserIdFromRequest(req)
   if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })

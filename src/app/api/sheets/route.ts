@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { supabaseAdmin } from '@/lib/supabaseServer'
+import { getUserIdFromRequest } from '@/lib/supabaseServer'
 
 export async function GET(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
-
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return NextResponse.json({ error: '인증 실패' }, { status: 401 })
+  const userId = await getUserIdFromRequest(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheets = await prisma.callSheet.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { updatedAt: 'desc' },
     include: { tags: { include: { tag: true } } },
   })
@@ -19,16 +16,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
-
-    const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-    if (!user) return NextResponse.json({ error: '인증 실패' }, { status: 401 })
+    const userId = await getUserIdFromRequest(req)
+    if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
     await prisma.profile.upsert({
-      where: { id: user.id },
+      where: { id: userId },
       update: {},
-      create: { id: user.id },
+      create: { id: userId },
     })
 
     const body = await req.json()
@@ -36,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const sheet = await prisma.callSheet.create({
       data: {
-        userId: user.id,
+        userId,
         artistName: body.artistName || null,
         songTitle: body.songTitle || null,
         songLang: body.songLang || null,
@@ -52,8 +46,8 @@ export async function POST(req: NextRequest) {
               create: { name },
             })
             return { tagId: tag.id }
-          }))
-        }
+          })),
+        },
       },
       include: { tags: { include: { tag: true } } },
     })

@@ -76,7 +76,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
     );
   }
 
-if (parsed.type === 'twitter') {
+  if (parsed.type === 'twitter') {
     return (
       <div className={compact ? 'mt-2' : 'mt-3'}>
         {label && (
@@ -89,6 +89,7 @@ if (parsed.type === 'twitter') {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label={label ? `${label} X 링크 열기` : 'X 링크 열기'}
           className="inline-flex items-center gap-2 text-xs text-sky-600 hover:text-sky-700
                      bg-sky-50 border border-sky-200 rounded px-2 py-1 transition-colors"
         >

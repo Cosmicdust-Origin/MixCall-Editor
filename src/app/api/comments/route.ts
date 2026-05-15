@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { supabaseAdmin } from '@/lib/supabaseServer'
+import { getUserIdFromRequest } from '@/lib/supabaseServer'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -22,10 +22,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return NextResponse.json({ error: '인증 실패' }, { status: 401 })
+  const userId = await getUserIdFromRequest(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const { sheetId, content, parentId } = await req.json()
   if (!sheetId || !content?.trim()) return NextResponse.json({ error: '내용 필요' }, { status: 400 })
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
   const comment = await prisma.comment.create({
     data: {
       sheetId,
-      userId: user.id,
+      userId,
       content: content.trim(),
       parentId: parentId || null,
     },

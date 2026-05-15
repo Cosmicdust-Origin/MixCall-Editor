@@ -112,12 +112,13 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
             </div>
 
             {idx < block.lines.length - 1 && (
-              <div className="relative h-6 flex items-center justify-center my-1">
+              <div className="relative h-4 flex items-center justify-center my-0.5">
                 <div className="absolute inset-x-0 top-1/2 border-t border-gray-100" />
                 <button
                   onClick={() => onSplit(idx + 1)}
-                  className="relative bg-white border border-gray-200 rounded-full text-xs px-2.5 py-0.5 text-gray-300 hover:text-red-400 hover:border-red-200 transition-colors shadow-sm z-10">
-                  ✂️ 여기서 분리
+                  title="여기서 분리"
+                  className="relative bg-white border border-gray-100 rounded-full text-[10px] leading-4 px-1.5 py-0 text-gray-300 hover:text-red-400 hover:border-red-200 transition-colors z-10 opacity-70 hover:opacity-100">
+                  분리
                 </button>
               </div>
             )}

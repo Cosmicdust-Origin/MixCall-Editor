@@ -9,6 +9,13 @@ import VideoEmbed from '@/components/VideoEmbed'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
+
+type SheetTagResponse = {
+  tag: {
+    name: string
+  }
+}
 
 const createInitialBlocks = (): Block[] => [
   { id: crypto.randomUUID(), type: 'lyric', lines: [{ id: crypto.randomUUID(), jp: '', hira: '', ko: '' }] }
@@ -24,7 +31,7 @@ export default function EditorPage() {
   const [isPublic, setIsPublic] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [songLang, setSongLang] = useState<'ko' | 'jp' | null>(null)
   const [referenceVideos, setReferenceVideos] = useState<ReferenceVideo[]>([])
   const [tags, setTags] = useState<string[]>([])
@@ -47,7 +54,7 @@ export default function EditorPage() {
           setSongLang(data.songLang || null)
           setLanguage(data.editorLanguage || 'jp') // ✅ 언어 설정 복원
           setReferenceVideos(data.referenceVideos ?? [])
-          setTags((data.tags ?? []).map((t: any) => t.tag.name))
+          setTags((data.tags ?? []).map((t: SheetTagResponse) => t.tag.name))
           setSavedId(id)
         }
       }
@@ -163,10 +170,10 @@ export default function EditorPage() {
           </div>
 
           <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
-            <button onClick={() => { setSongLang('jp'); if (!savedId) setLanguage('jp') }}
+            <button onClick={() => setSongLang('jp')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'jp' ? 'bg-red-100 text-red-500' : 'text-gray-500 hover:bg-gray-50'}`}>
               🇯🇵 일본 곡</button>
-            <button onClick={() => { setSongLang('ko'); if (!savedId) setLanguage('ko') }}
+            <button onClick={() => setSongLang('ko')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'ko' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
               🇰🇷 한국 곡</button>
             <button onClick={() => setSongLang(null)}

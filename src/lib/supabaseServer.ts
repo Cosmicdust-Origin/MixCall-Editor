@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
+import type { NextRequest } from 'next/server'
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,4 +21,12 @@ export async function verifyToken(token: string): Promise<{ sub: string } | null
   } catch {
     return null
   }
+}
+
+export async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
+  if (!token) return null
+
+  const result = await verifyToken(token)
+  return result?.sub ?? null
 }

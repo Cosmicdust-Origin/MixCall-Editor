@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { supabaseAdmin } from '@/lib/supabaseServer'
-
-async function getUser(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return null
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  return user
-}
+import { getUserIdFromRequest } from '@/lib/supabaseServer'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,22 +9,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     include: { tags: { include: { tag: true } } },
   })
   if (!sheet) return NextResponse.json({ error: '없음' }, { status: 404 })
+
   if (!sheet.isPublic) {
-    const user = await getUser(req)
-    if (!user || user.id !== sheet.userId)
+    const userId = await getUserIdFromRequest(req)
+    if (!userId || userId !== sheet.userId) {
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
+    }
   }
+
   return NextResponse.json(sheet)
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+  const userId = await getUserIdFromRequest(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })
-  if (!sheet || sheet.userId !== user.id)
+  if (!sheet || sheet.userId !== userId) {
     return NextResponse.json({ error: '권한 없음' }, { status: 403 })
+  }
 
   const body = await req.json()
   const tagNames: string[] | undefined = body.tags
@@ -56,9 +53,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
               create: { name },
             })
             return { tagId: tag.id }
-          }))
-        }
-      })
+          })),
+        },
+      }),
     },
     include: { tags: { include: { tag: true } } },
   })
@@ -67,12 +64,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+  const userId = await getUserIdFromRequest(req)
+  if (!userId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const sheet = await prisma.callSheet.findUnique({ where: { id } })
-  if (!sheet || sheet.userId !== user.id)
+  if (!sheet || sheet.userId !== userId) {
     return NextResponse.json({ error: '권한 없음' }, { status: 403 })
+  }
 
   await prisma.callSheet.delete({ where: { id } })
   return NextResponse.json({ ok: true })
