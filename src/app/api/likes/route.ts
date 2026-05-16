@@ -17,6 +17,12 @@ export async function POST(req: NextRequest) {
 
   const { sheetId } = await req.json()
 
+  const sheet = await prisma.callSheet.findUnique({ where: { id: sheetId }, select: { isPublic: true, userId: true } })
+  if (!sheet) return NextResponse.json({ error: '없음' }, { status: 404 })
+  if (!sheet.isPublic && sheet.userId !== userId) {
+    return NextResponse.json({ error: '권한 없음' }, { status: 403 })
+  }
+
   const existing = await prisma.like.findUnique({
     where: { sheetId_userId: { sheetId, userId } },
   })
