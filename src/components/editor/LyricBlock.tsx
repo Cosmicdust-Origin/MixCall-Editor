@@ -99,15 +99,15 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                 <button
                   onClick={() => moveLine(line.id, 'up')}
                   disabled={idx === 0}
-                  className="text-gray-400 hover:text-gray-600 disabled:opacity-25 text-xs leading-none">↑</button>
+                  className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↑</button>
                 <button
                   onClick={() => moveLine(line.id, 'down')}
                   disabled={idx === block.lines.length - 1}
-                  className="text-gray-400 hover:text-gray-600 disabled:opacity-25 text-xs leading-none">↓</button>
+                  className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↓</button>
               </div>
               {block.lines.length > 1 && (
                 <button onClick={() => removeLine(line.id)}
-                  className="mt-2 text-gray-400 hover:text-red-400 text-sm transition-colors shrink-0">✕</button>
+                  className="mt-2 text-gray-500 hover:text-red-500 text-sm transition-colors shrink-0">✕</button>
               )}
             </div>
 
