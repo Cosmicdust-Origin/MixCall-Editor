@@ -77,26 +77,26 @@ export default function BlockWrapper({
 
       <div className={`flex gap-1 px-4 pb-3 flex-wrap transition-opacity ${hover ? 'opacity-100' : 'opacity-0'}`}>
         <button onClick={onMoveUp} disabled={isFirst}
-          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 disabled:opacity-20 hover:text-gray-600 hover:border-gray-300">↑</button>
+          className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 disabled:opacity-25 hover:text-gray-700 hover:border-gray-400">↑</button>
         <button onClick={onMoveDown} disabled={isLast}
-          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 disabled:opacity-20 hover:text-gray-600 hover:border-gray-300">↓</button>
+          className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 disabled:opacity-25 hover:text-gray-700 hover:border-gray-400">↓</button>
         <button onClick={onDuplicate}
-          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300">복제</button>
+          className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">복제</button>
         {onMergeWithPrev && (
           <button onClick={onMergeWithPrev}
-            className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300">↑ 합치기</button>
+            className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">↑ 합치기</button>
         )}
         <button onClick={onDelete}
-          className="text-xs px-2 py-1 rounded border border-red-200 text-red-300 hover:text-red-500 hover:border-red-300">✕ 삭제</button>
+          className="text-xs px-2 py-1 rounded border border-red-300 text-red-400 hover:text-red-600 hover:border-red-400">✕ 삭제</button>
         <span className="flex-1" />
         <button onClick={onInsertLyric}
-          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-400 hover:text-gray-600">+ 가사</button>
+          className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700">+ 가사</button>
         <button onClick={onInsertMix}
-          className="text-xs px-2 py-1 rounded border border-red-200 text-red-300 hover:text-red-500">+ 믹스</button>
+          className="text-xs px-2 py-1 rounded border border-red-300 text-red-400 hover:text-red-600">+ 믹스</button>
         <button onClick={onInsertInterlude}
-          className="text-xs px-2 py-1 rounded border border-blue-200 text-blue-300 hover:text-blue-500">+ 간주</button>
+          className="text-xs px-2 py-1 rounded border border-blue-300 text-blue-400 hover:text-blue-600">+ 간주</button>
         <button onClick={onInsertPerformance}
-          className="text-xs px-2 py-1 rounded border border-purple-200 text-purple-300 hover:text-purple-500">+ 퍼포먼스</button>
+          className="text-xs px-2 py-1 rounded border border-purple-300 text-purple-400 hover:text-purple-600">+ 퍼포먼스</button>
       </div>
     </div>
   )

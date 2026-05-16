@@ -99,26 +99,25 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                 <button
                   onClick={() => moveLine(line.id, 'up')}
                   disabled={idx === 0}
-                  className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">↑</button>
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-25 text-xs leading-none">↑</button>
                 <button
                   onClick={() => moveLine(line.id, 'down')}
                   disabled={idx === block.lines.length - 1}
-                  className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">↓</button>
+                  className="text-gray-400 hover:text-gray-600 disabled:opacity-25 text-xs leading-none">↓</button>
               </div>
               {block.lines.length > 1 && (
                 <button onClick={() => removeLine(line.id)}
-                  className="mt-2 text-gray-300 hover:text-red-400 text-sm transition-colors shrink-0">✕</button>
+                  className="mt-2 text-gray-400 hover:text-red-400 text-sm transition-colors shrink-0">✕</button>
               )}
             </div>
 
             {idx < block.lines.length - 1 && (
-              <div className="relative h-4 flex items-center justify-center mt-1 mb-0">
-                <div className="absolute inset-x-0 top-1/2 border-t border-gray-100" />
+              <div className="relative h-6 flex items-center justify-center my-1">
+                <div className="absolute inset-x-0 top-1/2 border-t border-gray-300" />
                 <button
                   onClick={() => onSplit(idx + 1)}
-                  title="여기서 분리"
-                  className="relative bg-white border border-gray-100 rounded-full text-[10px] leading-4 px-1.5 py-0 text-gray-300 hover:text-red-400 hover:border-red-200 transition-colors z-10 opacity-70 hover:opacity-100">
-                  분리
+                  className="relative bg-white border border-gray-400 rounded-full text-xs px-2.5 py-0.5 text-gray-600 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm z-10">
+                  ✂️ 분리
                 </button>
               </div>
             )}
