@@ -6,16 +6,18 @@ import AuthButton from '@/components/AuthButton'
 import SearchBar from '@/components/SearchBar'
 import SheetCard from '@/components/SheetCard'
 
-async function getPublicSheets(query?: string, tag?: string) {
+async function getPublicSheets(query?: string, tag?: string, mode?: string) {
   try {
     const sheets = await prisma.callSheet.findMany({
       where: {
         isPublic: true,
         ...(query ? {
-          OR: [
-            { artistName: { contains: query, mode: 'insensitive' } },
-            { songTitle: { contains: query, mode: 'insensitive' } },
-          ]
+          OR: mode === 'title'
+            ? [{ songTitle: { contains: query, mode: 'insensitive' } }]
+            : [
+                { artistName: { contains: query, mode: 'insensitive' } },
+                { songTitle: { contains: query, mode: 'insensitive' } },
+              ]
         } : {}),
         ...(tag ? {
           tags: { some: { tag: { name: { equals: tag, mode: 'insensitive' } } } }
@@ -38,10 +40,11 @@ async function getPublicSheets(query?: string, tag?: string) {
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string, tag?: string }>
+  searchParams: Promise<{ q?: string, tag?: string, mode?: string }>
 }) {
-  const { q, tag } = await searchParams
-  const sheets = await getPublicSheets(q, tag)
+  const { q, tag, mode } = await searchParams
+  const sheets = await getPublicSheets(q, tag, mode)
+  const defaultMode = tag ? 'tag' : mode === 'title' ? 'title' : 'all'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,7 +65,7 @@ export default async function HomePage({
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        <SearchBar defaultValue={q} />
+        <SearchBar defaultValue={tag || q} defaultMode={defaultMode as 'all' | 'tag' | 'title'} />
 
         {/* 태그 필터 표시 */}
         {tag && (

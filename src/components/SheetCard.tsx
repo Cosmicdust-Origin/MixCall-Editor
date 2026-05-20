@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   sheet: any
 }
 
 export default function SheetCard({ sheet }: Props) {
+  const router = useRouter()
   const [bookmarked, setBookmarked] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
@@ -72,6 +74,19 @@ export default function SheetCard({ sheet }: Props) {
             <p className="text-xs text-red-400">❤️ {sheet._count.likes}</p>
           )}
         </div>
+        {sheet.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {sheet.tags.map((t: any) => (
+              <button
+                key={t.tag.id}
+                onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/?tag=${encodeURIComponent(t.tag.name)}`) }}
+                className="text-xs px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-100 hover:border-gray-300 hover:text-gray-600 transition-colors"
+              >
+                #{t.tag.name}
+              </button>
+            ))}
+          </div>
+        )}
       </Link>
       <div className="flex items-center gap-2 ml-3 shrink-0">
         {user && (
