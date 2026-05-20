@@ -6,7 +6,7 @@ import AuthButton from '@/components/AuthButton'
 import SearchBar from '@/components/SearchBar'
 import SheetCard from '@/components/SheetCard'
 
-async function getPublicSheets(query?: string, tag?: string, mode?: string) {
+async function getPublicSheets(query?: string, tags?: string[], mode?: string) {
   try {
     const sheets = await prisma.callSheet.findMany({
       where: {
@@ -19,8 +19,11 @@ async function getPublicSheets(query?: string, tag?: string, mode?: string) {
                 { songTitle: { contains: query, mode: 'insensitive' } },
               ]
         } : {}),
-        ...(tag ? {
-          tags: { some: { tag: { name: { equals: tag, mode: 'insensitive' } } } }
+        // 복수 태그 AND 검색: 선택한 태그를 모두 가진 콜표만
+        ...(tags && tags.length > 0 ? {
+          AND: tags.map(t => ({
+            tags: { some: { tag: { name: { equals: t, mode: 'insensitive' } } } }
+          }))
         } : {}),
       },
       orderBy: { updatedAt: 'desc' },
@@ -40,11 +43,13 @@ async function getPublicSheets(query?: string, tag?: string, mode?: string) {
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string, tag?: string, mode?: string }>
+  searchParams: Promise<{ q?: string, tag?: string | string[], mode?: string }>
 }) {
   const { q, tag, mode } = await searchParams
-  const sheets = await getPublicSheets(q, tag, mode)
-  const defaultMode = tag ? 'tag' : mode === 'title' ? 'title' : 'all'
+  // tag 파라미터 정규화: 단일 string → string[], undefined → []
+  const tags: string[] = tag ? (Array.isArray(tag) ? tag : [tag]) : []
+  const sheets = await getPublicSheets(q, tags, mode)
+  const defaultMode = tags.length > 0 ? 'tag' : mode === 'title' ? 'title' : 'all'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,25 +70,13 @@ export default async function HomePage({
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        <SearchBar defaultValue={tag || q} defaultMode={defaultMode as 'all' | 'tag' | 'title'} />
-
-        {/* 태그 필터 표시 */}
-        {tag && (
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-gray-400">태그 필터:</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-              #{tag}
-            </span>
-            <Link href={q ? `/?q=${encodeURIComponent(q)}` : '/'}
-              className="text-xs text-gray-400 hover:text-red-400 transition-colors">
-              ✕ 필터 해제
-            </Link>
-          </div>
-        )}
+        <SearchBar defaultValue={q} defaultMode={defaultMode as 'all' | 'tag' | 'title'} defaultTags={tags} />
 
         <div className="mb-6">
           <h2 className="font-bold text-gray-800 mb-3">
-            {tag ? `#${tag} 콜/믹스 표` : q ? `"${q}" 검색 결과` : '📋 등록된 콜/믹스 표'}
+            {tags.length > 0
+              ? tags.map(t => `#${t}`).join(' ') + ' 콜/믹스 표'
+              : q ? `"${q}" 검색 결과` : '📋 등록된 콜/믹스 표'}
             <span className="text-sm font-normal text-gray-400 ml-2">{sheets.length}개</span>
           </h2>
 
