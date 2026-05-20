@@ -47,6 +47,7 @@ export default function TagInput({ tags, onChange }: Props) {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return  // 한글 IME 조합 중에는 모든 키 무시
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       addTag(input)
