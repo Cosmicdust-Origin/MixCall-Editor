@@ -46,37 +46,38 @@ export default function SheetCard({ sheet }: Props) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between hover:border-gray-300 transition-colors">
       <Link href={`/sheet/${sheet.id}`} className="flex-1 min-w-0">
-        {sheet.artistName && (
-          <p className="text-xs text-gray-400">{sheet.artistName}</p>
-        )}
+        {/* 1행: 아티스트명 + 날짜/닉네임 */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-gray-400 truncate">{sheet.artistName || ''}</p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <p className="text-xs text-gray-300">
+              {mounted ? new Date(sheet.updatedAt).toLocaleDateString('ko-KR') : ''}
+            </p>
+            {sheet.user?.nickname && (
+              <p className="text-xs text-gray-400">by {sheet.user.nickname}</p>
+            )}
+          </div>
+        </div>
+        {/* 2행: 곡목 + 언어뱃지 */}
         <div className="flex items-center gap-2">
-          <p className="font-medium text-gray-800">
-            {sheet.songTitle || '제목 없음'}
-          </p>
+          <p className="font-medium text-gray-800">{sheet.songTitle || '제목 없음'}</p>
           {sheet.songLang && (
-  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
-    sheet.songLang === 'ko'
-      ? 'border-blue-200 text-blue-400'
-      : 'border-red-200 text-red-400'
-  }`}>
-    {sheet.songLang === 'ko' ? '한국 곡' : '일본 곡'}
-  </span>
-)}
-        </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-xs text-gray-300">
-            {mounted ? new Date(sheet.updatedAt).toLocaleDateString('ko-KR') : ''}
-          </p>
-          {sheet.user?.nickname && (
-            <p className="text-xs text-gray-400">by {sheet.user.nickname}</p>
-          )}
-          {sheet._count?.likes > 0 && (
-            <p className="text-xs text-red-400">❤️ {sheet._count.likes}</p>
+            <span className={`text-xs px-1.5 py-0.5 rounded border font-medium shrink-0 ${
+              sheet.songLang === 'ko'
+                ? 'border-blue-200 text-blue-400'
+                : 'border-red-200 text-red-400'
+            }`}>
+              {sheet.songLang === 'ko' ? '한국 곡' : '일본 곡'}
+            </span>
           )}
         </div>
-        {sheet.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {sheet.tags.map((t: any) => (
+        {/* 3행: 좋아요 + 태그 */}
+        {(sheet._count?.likes > 0 || sheet.tags?.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1 mt-1">
+            {sheet._count?.likes > 0 && (
+              <span className="text-xs text-red-400 mr-0.5">❤️ {sheet._count.likes}</span>
+            )}
+            {sheet.tags?.map((t: any) => (
               <button
                 key={t.tag.id}
                 onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/?tag=${encodeURIComponent(t.tag.name)}`) }}
