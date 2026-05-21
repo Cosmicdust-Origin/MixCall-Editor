@@ -23,6 +23,56 @@ interface Props {
   onReferenceUrlChange: (url: string) => void
 }
 
+const hasJapaneseText = (text: string) => /[\u3040-\u30ff\u3400-\u9fff]/.test(text)
+const hasKoreanText = (text: string) => /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text)
+
+function createLyricLine(fields: Partial<Pick<LyricLine, 'jp' | 'hira' | 'ko'>>): LyricLine {
+  return {
+    id: crypto.randomUUID(),
+    jp: fields.jp ?? '',
+    hira: fields.hira ?? '',
+    ko: fields.ko ?? '',
+  }
+}
+
+function parseJapaneseKoreanPaste(lines: string[], field: 'jp' | 'ko'): LyricLine[] {
+  if (field === 'ko') {
+    return lines.map(text => createLyricLine({ ko: text }))
+  }
+
+  const shouldPairReadings = lines.some(hasJapaneseText) && lines.some(line => hasKoreanText(line) && !hasJapaneseText(line))
+  if (!shouldPairReadings) {
+    return lines.map(text => createLyricLine({ jp: text }))
+  }
+
+  const parsed: LyricLine[] = []
+  for (let i = 0; i < lines.length; i += 1) {
+    const current = lines[i]
+    const next = lines[i + 1]
+
+    if (hasJapaneseText(current)) {
+      if (next && hasKoreanText(next) && !hasJapaneseText(next)) {
+        parsed.push(createLyricLine({ jp: current, ko: next }))
+        i += 1
+      } else {
+        parsed.push(createLyricLine({ jp: current }))
+      }
+    } else {
+      parsed.push(createLyricLine({ ko: current }))
+    }
+  }
+
+  return parsed
+}
+
+function lyricFields(line: LyricLine): Pick<LyricLine, 'jp' | 'hira' | 'ko'> {
+  return {
+    jp: line.jp,
+    hira: line.hira,
+    ko: line.ko,
+  }
+}
+
 export default function LyricBlockComp({ block, language, onChange, onSplit, ...wrapperProps }: Props) {
 
   const updateLine = (id: string, field: keyof LyricLine, value: string) => {
@@ -55,19 +105,11 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
     e.preventDefault()
     const currentIdx = block.lines.findIndex(l => l.id === lineId)
     const newLines = [...block.lines]
+    const parsedLines = parseJapaneseKoreanPaste(pasted, field)
 
-    // 현재 줄에 첫 번째 줄 삽입
-    newLines[currentIdx] = { ...newLines[currentIdx], [field]: pasted[0] }
+    newLines[currentIdx] = { ...newLines[currentIdx], ...lyricFields(parsedLines[0]) }
 
-    // 나머지 줄은 현재 위치 다음에 추가
-    const extraLines: LyricLine[] = pasted.slice(1).map(text => ({
-      id: crypto.randomUUID(),
-      jp: field === 'jp' ? text : '',
-      hira: '',
-      ko: field === 'ko' ? text : '',
-    }))
-
-    newLines.splice(currentIdx + 1, 0, ...extraLines)
+    newLines.splice(currentIdx + 1, 0, ...parsedLines.slice(1))
     onChange({ ...block, lines: newLines })
   }
 

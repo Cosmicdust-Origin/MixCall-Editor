@@ -8,7 +8,24 @@ interface VideoEmbedProps {
   compact?: boolean;
 }
 
-function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: string } {
+function parseYouTubeStartSeconds(u: URL): number | undefined {
+  const rawTime = u.searchParams.get('t') ?? u.searchParams.get('start') ?? u.hash.match(/(?:^#|[&#])t=([^&]+)/)?.[1]
+  if (!rawTime) return undefined
+
+  const value = rawTime.trim().toLowerCase()
+  if (/^\d+$/.test(value)) return Number(value)
+
+  const match = value.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/)
+  if (!match) return undefined
+
+  const hours = Number(match[1] ?? 0)
+  const minutes = Number(match[2] ?? 0)
+  const seconds = Number(match[3] ?? 0)
+  const total = hours * 3600 + minutes * 60 + seconds
+  return total > 0 ? total : undefined
+}
+
+function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: string; start?: number } {
   try {
     const u = new URL(url);
     const host = u.hostname.replace('www.', '');
@@ -24,7 +41,7 @@ function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: st
       } else if (u.pathname.startsWith('/embed/')) {
         videoId = u.pathname.replace('/embed/', '').split('?')[0];
       }
-      if (videoId) return { type: 'youtube', id: videoId };
+      if (videoId) return { type: 'youtube', id: videoId, start: parseYouTubeStartSeconds(u) };
     }
 
     if (host === 'twitter.com' || host === 'x.com') {
@@ -65,7 +82,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
           <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
             <iframe
               className="absolute inset-0 w-full h-full rounded-lg"
-              src={`https://www.youtube.com/embed/${parsed.id}`}
+              src={`https://www.youtube.com/embed/${parsed.id}${parsed.start ? `?start=${parsed.start}` : ''}`}
               title={label ?? 'YouTube 참고영상'}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
