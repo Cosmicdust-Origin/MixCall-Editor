@@ -105,11 +105,13 @@ model Like {
   id        String    @id @default(cuid())
   sheetId   String
   sheet     CallSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  userId    String
-  user      Profile   @relation(fields: [userId], references: [id])
+  userId    String?
+  user      Profile?  @relation(fields: [userId], references: [id])
+  voterKey  String
   createdAt DateTime  @default(now())
 
   @@unique([sheetId, userId])
+  @@unique([sheetId, voterKey])
 }
 
 model Bookmark {
