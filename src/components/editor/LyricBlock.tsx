@@ -21,6 +21,8 @@ interface Props {
   onInsertPerformance: () => void
   referenceUrl?: string
   onReferenceUrlChange: (url: string) => void
+  note?: string
+  onNoteChange: (note: string) => void
 }
 
 const hasJapaneseText = (text: string) => /[\u3040-\u30ff\u3400-\u9fff]/.test(text)

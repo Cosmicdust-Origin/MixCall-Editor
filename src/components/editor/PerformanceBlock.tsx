@@ -19,6 +19,8 @@ interface Props {
   onInsertPerformance: () => void
   referenceUrl?: string
   onReferenceUrlChange: (url: string) => void
+  note?: string
+  onNoteChange: (note: string) => void
 }
 
 const PERFORMANCE_TYPES: PerformanceType[] = ['오타게', '후리코피', '모슁', '원진', '투스텝', 'DnB', '기타']
@@ -62,14 +64,6 @@ export default function PerformanceBlockComp({ block, onChange, ...wrapperProps 
             className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm outline-none focus:border-purple-300 placeholder:text-gray-300 shadow-sm"
           />
         )}
-
-        {/* 메모 */}
-        <input
-          value={block.memo ?? ''}
-          onChange={e => onChange({ ...block, memo: e.target.value })}
-          placeholder="메모 (선택 · 예: 2번 반복, 양손 펜라이트)"
-          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-500 text-sm outline-none focus:border-purple-300 placeholder:text-gray-300 shadow-sm"
-        />
 
       </div>
     </BlockWrapper>

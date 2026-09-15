@@ -4,6 +4,7 @@ export type Language = 'jp' | 'ko';
 export interface BaseBlock {
   id: string;
   referenceUrl?: string; // 블록별 참고영상 링크 (YouTube or X)
+  note?: string;         // 블록에 종속된 짧은 설명
 }
 
 // ─── 가사 블록 ────────────────────────────────────────────────
@@ -55,7 +56,7 @@ export interface PerformanceBlock extends BaseBlock {
   type: 'performance';
   performanceType: PerformanceType;
   customLabel?: string; // performanceType이 '기타'일 때 직접 입력
-  memo?: string;        // 선택 메모 (예: "2번 반복", "양손 펜라이트")
+  memo?: string;        // 이전 데이터 호환용. 새 편집은 BaseBlock.note 사용
 }
 
 // ─── 유니언 ──────────────────────────────────────────────────

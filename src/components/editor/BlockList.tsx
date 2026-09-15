@@ -5,6 +5,7 @@ import LyricBlockComp from './LyricBlock'
 import MixBlockComp from './MixBlock'
 import InterludeBlockComp from './InterludeBlock'
 import PerformanceBlockComp from './PerformanceBlock'
+import { getBlockNote } from '@/lib/blockNote'
 
 interface Props {
   blocks: Block[]
@@ -19,6 +20,10 @@ export default function BlockList({ blocks, language, onChange }: Props) {
 
   const updateReferenceUrl = (id: string, url: string) => {
     onChange(blocks.map(b => b.id === id ? { ...b, referenceUrl: url } : b))
+  }
+
+  const updateNote = (id: string, note: string) => {
+    onChange(blocks.map(b => b.id === id ? { ...b, note } : b))
   }
 
   const removeBlock = (id: string) => {
@@ -65,7 +70,12 @@ export default function BlockList({ blocks, language, onChange }: Props) {
     const lines = (block as LyricBlock).lines
     if (lineIdx <= 0 || lineIdx >= lines.length) return
 
-    const block1: LyricBlock = { ...block as LyricBlock, id: crypto.randomUUID(), lines: lines.slice(0, lineIdx) }
+    const block1: LyricBlock = {
+      ...block as LyricBlock,
+      id: crypto.randomUUID(),
+      lines: lines.slice(0, lineIdx),
+      note: undefined,
+    }
     const block2: LyricBlock = { ...block as LyricBlock, id: crypto.randomUUID(), lines: lines.slice(lineIdx) }
 
     const idx = blocks.findIndex(b => b.id === blockId)
@@ -82,7 +92,8 @@ export default function BlockList({ blocks, language, onChange }: Props) {
     if (prev.type !== 'lyric' || curr.type !== 'lyric') return
     const merged: LyricBlock = {
       ...prev,
-      lines: [...(prev as LyricBlock).lines, ...(curr as LyricBlock).lines]
+      lines: [...(prev as LyricBlock).lines, ...(curr as LyricBlock).lines],
+      note: [getBlockNote(prev), getBlockNote(curr)].map(note => note.trim()).filter(Boolean).join('\n') || undefined,
     }
     const next = [...blocks]
     next.splice(idx - 1, 2, merged)
@@ -100,6 +111,8 @@ export default function BlockList({ blocks, language, onChange }: Props) {
           isLast: idx === blocks.length - 1,
           referenceUrl: block.referenceUrl,
           onReferenceUrlChange: (url: string) => updateReferenceUrl(block.id, url),
+          note: getBlockNote(block),
+          onNoteChange: (note: string) => updateNote(block.id, note),
           onMoveUp: () => moveBlock(block.id, 'up'),
           onMoveDown: () => moveBlock(block.id, 'down'),
           onDelete: () => removeBlock(block.id),

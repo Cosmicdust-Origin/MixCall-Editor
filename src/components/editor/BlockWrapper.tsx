@@ -9,6 +9,8 @@ interface Props {
   isLast: boolean
   referenceUrl?: string
   onReferenceUrlChange: (url: string) => void
+  note?: string
+  onNoteChange: (note: string) => void
   onMoveUp: () => void
   onMoveDown: () => void
   onDelete: () => void
@@ -24,11 +26,13 @@ interface Props {
 export default function BlockWrapper({
   type, isFirst, isLast,
   referenceUrl, onReferenceUrlChange,
+  note = '', onNoteChange,
   onMoveUp, onMoveDown, onDelete, onDuplicate, onMergeWithPrev,
   onInsertLyric, onInsertMix, onInsertInterlude, onInsertPerformance,
   children
 }: Props) {
   const [hover, setHover] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(Boolean(note))
 
   const styles = {
     lyric: {
@@ -69,6 +73,38 @@ export default function BlockWrapper({
 
       <div className="p-4 pt-5">
         {children}
+        {noteOpen ? (
+          <div className="mt-2 flex items-start gap-2 border-l-2 border-gray-200 pl-2">
+            <span aria-hidden="true" className="pt-1 text-xs text-gray-300">※</span>
+            <textarea
+              value={note}
+              onChange={e => onNoteChange(e.target.value)}
+              placeholder="이 블록에 대한 짧은 설명"
+              rows={1}
+              autoFocus={!note}
+              className="min-h-8 max-h-24 flex-1 resize-y bg-transparent px-1 py-1 text-xs leading-relaxed text-gray-500 outline-none placeholder:text-gray-300"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                onNoteChange('')
+                setNoteOpen(false)
+              }}
+              className="mt-1 text-xs text-gray-300 transition-colors hover:text-gray-500"
+              aria-label="주석 삭제"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setNoteOpen(true)}
+            className="mt-2 text-xs text-gray-400 transition-colors hover:text-gray-600"
+          >
+            + 주석
+          </button>
+        )}
         <VideoLinkInput
           value={referenceUrl}
           onChange={onReferenceUrlChange}

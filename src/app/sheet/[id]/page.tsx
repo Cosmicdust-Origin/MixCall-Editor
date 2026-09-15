@@ -9,6 +9,8 @@ import LikeButton from '@/components/LikeButton'
 import BookmarkButton from '@/components/BookmarkButton'
 import VideoEmbed from '@/components/VideoEmbed'
 import SheetTagEditor from '@/components/SheetTagEditor'
+import BlockNote from '@/components/BlockNote'
+import { getBlockNote } from '@/lib/blockNote'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -169,11 +171,9 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
                       ? block.customLabel
                       : block.performanceType}
                   </span>
-                  {block.memo && (
-                    <span className="text-xs text-gray-400">{block.memo}</span>
-                  )}
                 </div>
               )}
+              <BlockNote note={getBlockNote(block)} />
               {block.referenceUrl && (
                 <VideoEmbed url={block.referenceUrl} compact={false} />
               )}

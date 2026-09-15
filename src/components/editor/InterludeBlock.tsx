@@ -21,6 +21,8 @@ interface Props {
   onInsertPerformance: () => void
   referenceUrl?: string
   onReferenceUrlChange: (url: string) => void
+  note?: string
+  onNoteChange: (note: string) => void
 }
 
 const LABELS = ['전주', '간주', '간주 1', '간주 2', '아웃트로', '엔딩']

@@ -6,6 +6,8 @@ import BlockList from '@/components/editor/BlockList'
 import ReferenceVideoManager from '@/components/editor/ReferenceVideoManager'
 import TagInput from '@/components/editor/TagInput'
 import VideoEmbed from '@/components/VideoEmbed'
+import BlockNote from '@/components/BlockNote'
+import { getBlockNote } from '@/lib/blockNote'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -236,13 +238,18 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
 
   const handleCopy = () => {
     const text = blocks.map(b => {
-      if (b.type === 'lyric') return b.lines.map(l => {
+      let content = ''
+      if (b.type === 'lyric') content = b.lines.map(l => {
         if (language === 'ko') return l.ko
         return [l.jp, l.hira, l.ko].filter(Boolean).join('\n')
       }).join('\n')
-      if (b.type === 'mix') return b.text
-      if (b.type === 'interlude') return `[${b.label}]\n${b.text}`
-      return ''
+      if (b.type === 'mix') content = b.text
+      if (b.type === 'interlude') content = [`[${b.label}]`, b.text].filter(Boolean).join('\n')
+      if (b.type === 'performance') {
+        content = `[${b.performanceType === '기타' && b.customLabel ? b.customLabel : b.performanceType}]`
+      }
+      const note = getBlockNote(b).trim()
+      return [content, note ? `※ ${note}` : ''].filter(Boolean).join('\n')
     }).join('\n\n')
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
@@ -329,11 +336,9 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
                     ? block.customLabel
                     : block.performanceType}
                 </span>
-                {block.memo && (
-                  <span className="text-xs text-gray-400">{block.memo}</span>
-                )}
               </div>
             )}
+            <BlockNote note={getBlockNote(block)} />
             {block.referenceUrl && (
               <VideoEmbed url={block.referenceUrl} compact={false} />
             )}

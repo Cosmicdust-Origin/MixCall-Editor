@@ -21,6 +21,8 @@ interface Props {
   onInsertPerformance: () => void
   referenceUrl?: string
   onReferenceUrlChange: (url: string) => void
+  note?: string
+  onNoteChange: (note: string) => void
 }
 
 const QUICK_MIXES = ['기본 믹스 발동', '묘혼투스케 발동', '묘혼도라이바', '이엣타이가 추임새', '하이세노 콜', '사랑해 믹스', '원장 믹스', '혼돈 믹스 (와루도 카오스)']
