@@ -37,7 +37,9 @@ export interface MixBlock extends BaseBlock {
 export interface InterludeBlock extends BaseBlock {
   type: 'interlude';
   label: string;
-  text?: string;  // 추가
+  text?: string;
+  mixPresetId?: string;
+  alternatives?: MixAlternative[];
   mixName?: string;
   tokens?: string[];
 }

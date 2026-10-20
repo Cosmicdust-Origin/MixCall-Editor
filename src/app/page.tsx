@@ -5,8 +5,28 @@ import Link from 'next/link'
 import AuthButton from '@/components/AuthButton'
 import SearchBar from '@/components/SearchBar'
 import SheetCard from '@/components/SheetCard'
+import { getDevProductionSnapshot } from '@/lib/devProductionSnapshot'
 
 async function getPublicSheets(query?: string, tags?: string[], mode?: string) {
+  const snapshot = await getDevProductionSnapshot()
+  if (snapshot) {
+    const normalizedQuery = query?.trim().toLocaleLowerCase('ko-KR')
+    const normalizedTags = (tags ?? []).map(tag => tag.toLocaleLowerCase('ko-KR'))
+
+    return snapshot.sheets.filter(sheet => {
+      const matchesQuery = !normalizedQuery || (
+        mode === 'title'
+          ? (sheet.songTitle ?? '').toLocaleLowerCase('ko-KR').includes(normalizedQuery)
+          : [sheet.artistName, sheet.songTitle].some(value => (
+              (value ?? '').toLocaleLowerCase('ko-KR').includes(normalizedQuery)
+            ))
+      )
+      const sheetTags = sheet.tags.map(item => item.tag.name.toLocaleLowerCase('ko-KR'))
+      const matchesTags = normalizedTags.every(tag => sheetTags.includes(tag))
+      return matchesQuery && matchesTags
+    }).slice(0, 50)
+  }
+
   try {
     const sheets = await prisma.callSheet.findMany({
       where: {

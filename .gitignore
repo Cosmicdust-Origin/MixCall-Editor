@@ -46,3 +46,6 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 .claude/
+
+# local development snapshots and scratch files
+/work/

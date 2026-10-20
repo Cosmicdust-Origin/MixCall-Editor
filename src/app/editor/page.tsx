@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Block, Language, ReferenceVideo } from '@/types'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Block, Language, LyricLine, ReferenceVideo } from '@/types'
 import BlockList from '@/components/editor/BlockList'
 import ReferenceVideoManager from '@/components/editor/ReferenceVideoManager'
 import TagInput from '@/components/editor/TagInput'
@@ -10,7 +10,6 @@ import BlockNote from '@/components/BlockNote'
 import { getBlockNote } from '@/lib/blockNote'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 
 type SheetTagResponse = {
@@ -18,6 +17,35 @@ type SheetTagResponse = {
     name: string
   }
 }
+
+type EditorDocument = {
+  artistName: string
+  songTitle: string
+  songLang: 'ko' | 'jp' | null
+  editorLanguage: Language
+  isPublic: boolean
+  blocks: Block[]
+  referenceVideos: ReferenceVideo[]
+  tags: string[]
+}
+
+type LocalDraft = {
+  version: 1
+  sheetId: string | null
+  savedAt: string
+  document: EditorDocument
+}
+
+type LanguageSwitchRequest = {
+  from: Language
+  to: Language
+}
+
+const DRAFT_PREFIX = 'mix-call-editor:draft:'
+const UNSAVED_MESSAGE = '저장하지 않은 변경사항이 있습니다. 페이지를 나갈까요?'
+
+const getDraftKey = (sheetId: string | null) => `${DRAFT_PREFIX}${sheetId ?? 'new'}`
+const serializeDocument = (document: EditorDocument) => JSON.stringify(document)
 
 const createInitialBlocks = (): Block[] => [
   { id: crypto.randomUUID(), type: 'lyric', lines: [{ id: crypto.randomUUID(), jp: '', hira: '', ko: '' }] }
@@ -37,31 +65,294 @@ export default function EditorPage() {
   const [songLang, setSongLang] = useState<'ko' | 'jp' | null>(null)
   const [referenceVideos, setReferenceVideos] = useState<ReferenceVideo[]>([])
   const [tags, setTags] = useState<string[]>([])
+  const [baseline, setBaseline] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
+  const [autoSaveDraft, setAutoSaveDraft] = useState(false)
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
+  const [pendingDraft, setPendingDraft] = useState<LocalDraft | null>(null)
+  const [languageSwitch, setLanguageSwitch] = useState<LanguageSwitchRequest | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+
+  const dirtyRef = useRef(false)
+  const guardActiveRef = useRef(false)
+  const allowNextPopRef = useRef(false)
+  const pendingNavigationRef = useRef<(() => void) | null>(null)
+
+  const editorDocument = useMemo<EditorDocument>(() => ({
+    artistName,
+    songTitle,
+    songLang,
+    editorLanguage: language,
+    isPublic,
+    blocks,
+    referenceVideos,
+    tags,
+  }), [artistName, songTitle, songLang, language, isPublic, blocks, referenceVideos, tags])
+
+  const serializedDocument = useMemo(
+    () => serializeDocument(editorDocument),
+    [editorDocument],
+  )
+  const isDirty = baseline !== null && baseline !== serializedDocument
+
+  const applyDocument = (document: EditorDocument) => {
+    setArtistName(document.artistName)
+    setSongTitle(document.songTitle)
+    setSongLang(document.songLang)
+    setLanguage(document.editorLanguage)
+    setIsPublic(document.isPublic)
+    setBlocks(document.blocks)
+    setReferenceVideos(document.referenceVideos)
+    setTags(document.tags)
+  }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    let cancelled = false
+
+    const loadEditor = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (cancelled) return
+
       setUser(session?.user ?? null)
-      const params = new URLSearchParams(window.location.search)
-      const id = params.get('id')
+      const id = new URLSearchParams(window.location.search).get('id')
+      let loadedDocument: EditorDocument = {
+        artistName: '',
+        songTitle: '',
+        songLang: null,
+        editorLanguage: 'jp',
+        isPublic: false,
+        blocks,
+        referenceVideos: [],
+        tags: [],
+      }
+
       if (id && session) {
-        const res = await fetch(`/api/sheets/${id}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        })
-        const data = await res.json()
-        if (data.blocks) {
-          setBlocks(data.blocks)
-          setArtistName(data.artistName || '')
-          setSongTitle(data.songTitle || '')
-          setIsPublic(data.isPublic)
-          setSongLang(data.songLang || null)
-          setLanguage(data.editorLanguage || 'jp') // ✅ 언어 설정 복원
-          setReferenceVideos(data.referenceVideos ?? [])
-          setTags((data.tags ?? []).map((t: SheetTagResponse) => t.tag.name))
+        try {
+          const response = await fetch(`/api/sheets/${id}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.error || '콜표를 불러오지 못했습니다.')
+
+          loadedDocument = {
+            artistName: data.artistName || '',
+            songTitle: data.songTitle || '',
+            songLang: data.songLang || null,
+            editorLanguage: data.editorLanguage || 'jp',
+            isPublic: data.isPublic ?? false,
+            blocks: data.blocks,
+            referenceVideos: data.referenceVideos ?? [],
+            tags: (data.tags ?? []).map((tag: SheetTagResponse) => tag.tag.name),
+          }
           setSavedId(id)
+        } catch (error) {
+          setSaveMessage(error instanceof Error ? error.message : '콜표를 불러오지 못했습니다.')
         }
       }
-    })
+
+      if (cancelled) return
+      applyDocument(loadedDocument)
+      setBaseline(serializeDocument(loadedDocument))
+
+      try {
+        const storedDraft = localStorage.getItem(getDraftKey(id))
+        if (storedDraft) {
+          const draft = JSON.parse(storedDraft) as LocalDraft
+          if (
+            draft.version === 1
+            && draft.document
+            && serializeDocument(draft.document) !== serializeDocument(loadedDocument)
+          ) {
+            setPendingDraft(draft)
+          }
+        }
+      } catch {
+        localStorage.removeItem(getDraftKey(id))
+      }
+
+      setReady(true)
+    }
+
+    void loadEditor()
+    return () => { cancelled = true }
+    // 초기 상태를 한 번만 서버/로컬 저장소와 맞춘다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    dirtyRef.current = isDirty
+  }, [isDirty])
+
+  useEffect(() => {
+    if (!ready) return
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    const handlePopState = () => {
+      if (allowNextPopRef.current) {
+        allowNextPopRef.current = false
+        guardActiveRef.current = false
+        const pendingNavigation = pendingNavigationRef.current
+        pendingNavigationRef.current = null
+        pendingNavigation?.()
+        return
+      }
+
+      if (!guardActiveRef.current || !dirtyRef.current) return
+
+      if (window.confirm(UNSAVED_MESSAGE)) {
+        guardActiveRef.current = false
+        allowNextPopRef.current = true
+        window.history.back()
+      } else {
+        window.history.pushState({ ...window.history.state, mixEditorGuard: true }, '', window.location.href)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [ready])
+
+  useEffect(() => {
+    if (!ready) return
+
+    if (isDirty && !guardActiveRef.current) {
+      window.history.pushState({ ...window.history.state, mixEditorGuard: true }, '', window.location.href)
+      guardActiveRef.current = true
+      return
+    }
+
+    if (!isDirty && guardActiveRef.current) {
+      allowNextPopRef.current = true
+      window.history.back()
+    }
+  }, [isDirty, ready])
+
+  useEffect(() => {
+    if (!ready || !autoSaveDraft || !isDirty) return
+
+    const timer = window.setTimeout(() => {
+      const draft: LocalDraft = {
+        version: 1,
+        sheetId: savedId,
+        savedAt: new Date().toISOString(),
+        document: editorDocument,
+      }
+      localStorage.setItem(getDraftKey(savedId), JSON.stringify(draft))
+      setDraftSavedAt(draft.savedAt)
+    }, 1200)
+
+    return () => window.clearTimeout(timer)
+  }, [autoSaveDraft, editorDocument, isDirty, ready, savedId])
+
+  const navigateTo = (href: string) => {
+    if (dirtyRef.current && !window.confirm(UNSAVED_MESSAGE)) return
+
+    const navigate = () => router.push(href)
+    if (guardActiveRef.current) {
+      pendingNavigationRef.current = navigate
+      allowNextPopRef.current = true
+      window.history.back()
+    } else {
+      navigate()
+    }
+  }
+
+  const toggleAutoSaveDraft = (enabled: boolean) => {
+    setAutoSaveDraft(enabled)
+    setDraftSavedAt(null)
+    if (!enabled) localStorage.removeItem(getDraftKey(savedId))
+  }
+
+  const restoreDraft = () => {
+    if (!pendingDraft) return
+    applyDocument(pendingDraft.document)
+    setAutoSaveDraft(true)
+    setDraftSavedAt(pendingDraft.savedAt)
+    setPendingDraft(null)
+  }
+
+  const discardDraft = () => {
+    localStorage.removeItem(getDraftKey(savedId))
+    setPendingDraft(null)
+  }
+
+  const requestLanguageSwitch = (target: Language) => {
+    if (target === language) return
+    const hasLyricContent = blocks.some(block => (
+      block.type === 'lyric'
+      && block.lines.some(line => line.jp?.trim() || line.hira?.trim() || line.ko?.trim())
+    ))
+
+    if (!hasLyricContent) {
+      setLanguage(target)
+      return
+    }
+
+    setLanguageSwitch({ from: language, to: target })
+  }
+
+  const switchKoreanToJapanese = (destination: 'jp' | 'ko') => {
+    if (destination === 'jp') {
+      setBlocks(currentBlocks => currentBlocks.map(block => {
+        if (block.type !== 'lyric') return block
+        return {
+          ...block,
+          lines: block.lines.map(line => {
+            if (!line.ko?.trim() || line.jp?.trim()) return line
+            return { ...line, jp: line.ko, ko: '' }
+          }),
+        }
+      }))
+    }
+    setLanguage('jp')
+    setLanguageSwitch(null)
+  }
+
+  const switchJapaneseToKorean = (mode: 'original' | 'merge') => {
+    setBlocks(currentBlocks => currentBlocks.map(block => {
+      if (block.type !== 'lyric') return block
+
+      if (mode === 'original') {
+        return {
+          ...block,
+          lines: block.lines.map(line => ({
+            ...line,
+            jp: '',
+            hira: '',
+            ko: line.jp?.trim() ? line.jp : line.ko?.trim() ? line.ko : line.hira ?? '',
+          })),
+        }
+      }
+
+      return {
+        ...block,
+        lines: block.lines.flatMap(line => {
+          const values = [line.jp, line.hira, line.ko].filter(
+            (value): value is string => Boolean(value?.trim()),
+          )
+          if (values.length === 0) return [{ ...line, jp: '', hira: '', ko: '' }]
+
+          return values.map<LyricLine>((value, index) => ({
+            id: index === 0 ? line.id : crypto.randomUUID(),
+            jp: '',
+            hira: '',
+            ko: value,
+          }))
+        }),
+      }
+    }))
+    setLanguage('ko')
+    setLanguageSwitch(null)
+  }
 
   const addBlock = (type: Block['type']) => {
     const newBlock: Block = type === 'lyric'
@@ -75,30 +366,45 @@ export default function EditorPage() {
   }
 
   const handleSave = async () => {
-    if (!user) { router.push('/login'); return }
+    if (!user) { navigateTo('/login'); return }
     setSaving(true)
+    setSaveMessage(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const body = { artistName, songTitle, songLang, editorLanguage: language, isPublic, blocks, referenceVideos, tags } // ✅ editorLanguage 포함
+      if (!token) throw new Error('로그인이 만료되었습니다. 다시 로그인해 주세요.')
 
+      let response: Response
       if (savedId) {
-        await fetch(`/api/sheets/${savedId}`, {
+        response = await fetch(`/api/sheets/${savedId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(body),
+          body: JSON.stringify(editorDocument),
         })
       } else {
-        const res = await fetch('/api/sheets', {
+        response = await fetch('/api/sheets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(body),
+          body: JSON.stringify(editorDocument),
         })
-        const data = await res.json()
-        setSavedId(data.id)
       }
-    } catch (e) {
-      console.error(e)
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '저장에 실패했습니다.')
+
+      const previousDraftKey = getDraftKey(savedId)
+      const nextSavedId = savedId ?? data.id
+      if (!nextSavedId) throw new Error('저장된 콜표 ID를 확인하지 못했습니다.')
+
+      setSavedId(nextSavedId)
+      setBaseline(serializedDocument)
+      localStorage.removeItem(previousDraftKey)
+      localStorage.removeItem(getDraftKey(nextSavedId))
+      setDraftSavedAt(null)
+      setSaveMessage('저장되었습니다.')
+    } catch (error) {
+      console.error(error)
+      setSaveMessage(error instanceof Error ? error.message : '저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
@@ -106,10 +412,105 @@ export default function EditorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
+      {pendingDraft && (
+        <div className="fixed inset-0 z-[100] bg-black/40 px-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="draft-dialog-title">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h2 id="draft-dialog-title" className="font-bold text-gray-900">임시저장된 수정본이 있습니다</h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              {new Date(pendingDraft.savedAt).toLocaleString('ko-KR')}에 이 기기에 저장한 수정본을 복구할까요?
+              서버의 콜표는 아직 변경되지 않았습니다.
+            </p>
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
+              >
+                임시본 삭제
+              </button>
+              <button
+                type="button"
+                onClick={restoreDraft}
+                className="text-sm px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700"
+              >
+                복구
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {languageSwitch && (
+        <div className="fixed inset-0 z-[90] bg-black/40 px-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="language-dialog-title">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h2 id="language-dialog-title" className="font-bold text-gray-900">
+              {languageSwitch.from === 'ko' ? '한국어 내용을 어디에 넣을까요?' : '일본어 가사와 발음을 어떻게 합칠까요?'}
+            </h2>
+            {languageSwitch.from === 'ko' ? (
+              <>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                  일본어 편집은 위쪽 가사와 아래쪽 한국어 발음 두 칸을 사용합니다.
+                  이미 양쪽에 내용이 있는 줄은 덮어쓰지 않고 그대로 유지합니다.
+                </p>
+                <div className="flex flex-col gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => switchKoreanToJapanese('jp')}
+                    className="text-left rounded-xl border border-gray-200 p-3 hover:border-gray-400 hover:bg-gray-50"
+                  >
+                    <span className="block text-sm font-bold text-gray-800">위쪽 일본어 가사 칸으로 옮기기</span>
+                    <span className="block text-xs text-gray-400 mt-1">한국어 곡 가사를 주 가사 또는 믹스 타이밍 표시에 사용할 때</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchKoreanToJapanese('ko')}
+                    className="text-left rounded-xl border border-gray-200 p-3 hover:border-gray-400 hover:bg-gray-50"
+                  >
+                    <span className="block text-sm font-bold text-gray-800">아래쪽 한국어 발음 칸에 유지</span>
+                    <span className="block text-xs text-gray-400 mt-1">내용을 옮기지 않고 현재 한국어 칸에 그대로 둘 때</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                  한국어 편집은 한 줄만 사용합니다. 빈 값은 자동으로 건너뛰며, 선택하기 전에는 기존 내용을 변경하지 않습니다.
+                </p>
+                <div className="flex flex-col gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => switchJapaneseToKorean('original')}
+                    className="text-left rounded-xl border border-gray-200 p-3 hover:border-gray-400 hover:bg-gray-50"
+                  >
+                    <span className="block text-sm font-bold text-gray-800">발음 줄을 버리고 원문만 사용</span>
+                    <span className="block text-xs text-red-400 mt-1">한국어 발음과 히라가나 내용은 제거됩니다.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchJapaneseToKorean('merge')}
+                    className="text-left rounded-xl border border-gray-200 p-3 hover:border-gray-400 hover:bg-gray-50"
+                  >
+                    <span className="block text-sm font-bold text-gray-800">원문과 발음을 각각 가사줄로 합치기</span>
+                    <span className="block text-xs text-gray-400 mt-1">원문, 히라가나, 한국어 발음을 작성된 순서대로 별도 줄로 보존합니다.</span>
+                  </button>
+                </div>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setLanguageSwitch(null)}
+              className="mt-4 text-sm px-4 py-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 w-full"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm px-4 py-3">
         {/* 1행: 로고 + 저장/로그인 */}
         <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="text-red-500 font-black text-lg shrink-0">📣 믹스콜 에디터</Link>
+          <button type="button" onClick={() => navigateTo('/')} className="text-red-500 font-black text-lg shrink-0">📣 믹스콜 에디터</button>
           <div className="flex items-center gap-2 ml-auto">
             {user && (
               <button
@@ -127,17 +528,17 @@ export default function EditorPage() {
               </button>
             ) : (
               <button
-                onClick={() => router.push('/login')}
+                onClick={() => navigateTo('/login')}
                 className="text-xs px-4 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors shrink-0">
                 🔑 로그인 후 저장
               </button>
             )}
             {user ? (
-              <button onClick={() => router.push('/my')}
+              <button onClick={() => navigateTo('/my')}
                 className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
                 내 콜표</button>
             ) : (
-              <button onClick={() => router.push('/login')}
+              <button onClick={() => navigateTo('/login')}
                 className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 shrink-0">
                 로그인</button>
             )}
@@ -163,10 +564,10 @@ export default function EditorPage() {
         {/* 3행: 언어 토글 + 곡 언어 + 편집/미리보기 토글 */}
         <div className="flex gap-2 mt-2 flex-wrap">
           <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
-            <button onClick={() => setLanguage('jp')}
+            <button onClick={() => requestLanguageSwitch('jp')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${language === 'jp' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               🇯🇵 일본어</button>
-            <button onClick={() => setLanguage('ko')}
+            <button onClick={() => requestLanguageSwitch('ko')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${language === 'ko' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               🇰🇷 한국어</button>
           </div>
@@ -191,6 +592,30 @@ export default function EditorPage() {
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               👁️ 미리보기</button>
           </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-2 min-h-5 flex-wrap">
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoSaveDraft}
+              onChange={event => toggleAutoSaveDraft(event.target.checked)}
+              className="accent-gray-800"
+            />
+            이 기기에 임시 자동저장
+          </label>
+          {isDirty && <span className="text-xs text-orange-500">● 저장하지 않은 변경사항</span>}
+          {!isDirty && baseline && <span className="text-xs text-gray-300">저장된 상태</span>}
+          {draftSavedAt && (
+            <span className="text-xs text-blue-400">
+              임시저장 {new Date(draftSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          {saveMessage && (
+            <span className={`text-xs ${saveMessage === '저장되었습니다.' ? 'text-green-500' : 'text-red-500'}`}>
+              {saveMessage}
+            </span>
+          )}
         </div>
       </header>
 
@@ -243,8 +668,19 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
         if (language === 'ko') return l.ko
         return [l.jp, l.hira, l.ko].filter(Boolean).join('\n')
       }).join('\n')
-      if (b.type === 'mix') content = b.text
-      if (b.type === 'interlude') content = [`[${b.label}]`, b.text].filter(Boolean).join('\n')
+      if (b.type === 'mix') {
+        content = [
+          b.text,
+          ...(b.alternatives ?? []).map(alternative => `또는\n${alternative.text}`),
+        ].filter(Boolean).join('\n')
+      }
+      if (b.type === 'interlude') {
+        content = [
+          `[${b.label}]`,
+          b.text,
+          ...(b.alternatives ?? []).map(alternative => `또는\n${alternative.text}`),
+        ].filter(Boolean).join('\n')
+      }
       if (b.type === 'performance') {
         content = `[${b.performanceType === '기타' && b.customLabel ? b.customLabel : b.performanceType}]`
       }
@@ -327,6 +763,12 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
               <div className="my-2">
                 <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">{block.label}</span>
                 {block.text && <p className="text-red-600 font-bold text-sm leading-relaxed whitespace-pre-line mt-1">{block.text}</p>}
+                {(block.alternatives ?? []).map(alternative => (
+                  <div key={alternative.id} className="mt-1">
+                    <span className="text-xs font-bold text-orange-400">또는</span>
+                    <p className="text-red-600 font-bold text-sm leading-relaxed whitespace-pre-line">{alternative.text}</p>
+                  </div>
+                ))}
               </div>
             )}
             {block.type === 'performance' && (
