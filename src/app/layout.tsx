@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "믹스콜 에디터 ver 0.1",
+  title: "믹스콜 에디터 ver 0.6",
   description: "아이돌 공연 콜/믹스 콜표 제작 및 공유 도구",
   robots: {
     index: false,
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "믹스콜 에디터 ver 0.1",
+    title: "믹스콜 에디터 ver 0.6",
     description: "아이돌 공연 콜/믹스 콜표를 쉽게 만들고 공유해요 📣",
     url: "https://mix-call-editor.vercel.app",
     siteName: "믹스콜 에디터",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "믹스콜 에디터 ver 0.1",
+    title: "믹스콜 에디터 ver 0.6",
     description: "아이돌 공연 콜/믹스 콜표를 쉽게 만들고 공유해요 📣",
     images: ["https://mix-call-editor.vercel.app/og-image.png"],
   },
