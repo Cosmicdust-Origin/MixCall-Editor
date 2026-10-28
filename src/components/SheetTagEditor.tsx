@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
 
 interface Props {
   sheetId: string
@@ -21,7 +22,7 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<TagSuggestion[]>([])
   const [showSug, setShowSug] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -34,7 +35,7 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
 
   useEffect(() => {
     const q = input.trim()
-    if (!q) { setSuggestions([]); setShowSug(false); return }
+    if (!q) return
     const timer = setTimeout(() => {
       fetch(`/api/tags?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
@@ -45,7 +46,7 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
 
   const addTag = async (name: string) => {
     const trimmed = name.trim()
-    if (!trimmed || tags.includes(trimmed) || !accessToken) { setInput(''); setShowSug(false); return }
+    if (!trimmed || tags.includes(trimmed) || !accessToken) { setInput(''); setSuggestions([]); setShowSug(false); return }
     const res = await fetch(`/api/sheets/${sheetId}/tags`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
@@ -54,6 +55,7 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
     const updated = await res.json()
     setTags(updated)
     setInput('')
+    setSuggestions([])
     setShowSug(false)
     inputRef.current?.focus()
   }
@@ -93,7 +95,10 @@ export default function SheetTagEditor({ sheetId, initialTags, ownerId }: Props)
             <input
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => {
+                setInput(e.target.value)
+                if (!e.target.value.trim()) { setSuggestions([]); setShowSug(false) }
+              }}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(input) } }}
               onBlur={() => setTimeout(() => setShowSug(false), 150)}
               placeholder="+ 태그 추가"

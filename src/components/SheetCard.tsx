@@ -1,22 +1,38 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
+
+interface SheetCardData {
+  id: string
+  artistName: string | null
+  songTitle: string | null
+  songLang: string | null
+  updatedAt: string | Date
+  user?: { nickname: string | null } | null
+  _count?: { likes: number }
+  tags?: { tag: { id: string; name: string } }[]
+}
 
 interface Props {
-  sheet: any
+  sheet: SheetCardData
 }
+
+// 하이드레이션 후에만 true (서버/하이드레이션 중에는 false)
+const subscribeNoop = () => () => {}
+const getMountedSnapshot = () => true
+const getMountedServerSnapshot = () => false
 
 export default function SheetCard({ sheet }: Props) {
   const router = useRouter()
   const [bookmarked, setBookmarked] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [mounted, setMounted] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const mounted = useSyncExternalStore(subscribeNoop, getMountedSnapshot, getMountedServerSnapshot)
 
   useEffect(() => {
-    setMounted(true)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session) {
@@ -27,7 +43,7 @@ export default function SheetCard({ sheet }: Props) {
         setBookmarked(data.bookmarked)
       }
     })
-  }, [])
+  }, [sheet.id])
 
   const handleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -72,12 +88,12 @@ export default function SheetCard({ sheet }: Props) {
           )}
         </div>
         {/* 3행: 좋아요 + 태그 */}
-        {(sheet._count?.likes > 0 || sheet.tags?.length > 0) && (
+        {((sheet._count?.likes ?? 0) > 0 || (sheet.tags?.length ?? 0) > 0) && (
           <div className="flex flex-wrap items-center gap-1 mt-1">
-            {sheet._count?.likes > 0 && (
-              <span className="text-xs text-red-400 mr-0.5">❤️ {sheet._count.likes}</span>
+            {(sheet._count?.likes ?? 0) > 0 && (
+              <span className="text-xs text-red-400 mr-0.5">❤️ {sheet._count?.likes}</span>
             )}
-            {sheet.tags?.map((t: any) => (
+            {sheet.tags?.map(t => (
               <button
                 key={t.tag.id}
                 onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/?tag=${encodeURIComponent(t.tag.name)}`) }}

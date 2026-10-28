@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
 interface Comment {
   id: string
@@ -16,9 +17,14 @@ interface Comment {
   }[]
 }
 
+async function loadComments(sheetId: string): Promise<Comment[]> {
+  const res = await fetch(`/api/comments?sheetId=${sheetId}`)
+  return res.json()
+}
+
 export default function Comments({ sheetId }: { sheetId: string }) {
   const [comments, setComments] = useState<Comment[]>([])
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [input, setInput] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyInput, setReplyInput] = useState('')
@@ -28,13 +34,11 @@ export default function Comments({ sheetId }: { sheetId: string }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
     })
-    fetchComments()
-  }, [])
+    loadComments(sheetId).then(setComments)
+  }, [sheetId])
 
   const fetchComments = async () => {
-    const res = await fetch(`/api/comments?sheetId=${sheetId}`)
-    const data = await res.json()
-    setComments(data)
+    setComments(await loadComments(sheetId))
   }
 
   const getToken = async () => {

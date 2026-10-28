@@ -39,11 +39,7 @@ export default function SearchBar({ defaultValue, defaultMode = 'all', defaultTa
 
   // 태그 자동완성
   useEffect(() => {
-    if (mode !== 'tag' || value.trim().length === 0) {
-      setSuggestions([])
-      setShowSuggestions(false)
-      return
-    }
+    if (mode !== 'tag' || value.trim().length === 0) return
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/tags?q=${encodeURIComponent(value.trim())}`)
@@ -69,6 +65,7 @@ export default function SearchBar({ defaultValue, defaultMode = 'all', defaultTa
     const next = [...selectedTags, tagName]
     setSelectedTags(next)
     setValue('')
+    setSuggestions([])
     setShowSuggestions(false)
     navigateWithTags(next)
   }
@@ -96,6 +93,7 @@ export default function SearchBar({ defaultValue, defaultMode = 'all', defaultTa
       // 입력창에 텍스트가 있으면 태그로 추가 후 검색
       const next = v && !selectedTags.includes(v) ? [...selectedTags, v] : selectedTags
       setValue('')
+      setSuggestions([])
       setSelectedTags(next)
       navigateWithTags(next)
     } else if (!v) {
@@ -133,7 +131,10 @@ export default function SearchBar({ defaultValue, defaultMode = 'all', defaultTa
             ))}
             <input
               value={value}
-              onChange={e => setValue(e.target.value)}
+              onChange={e => {
+                setValue(e.target.value)
+                if (e.target.value.trim().length === 0) { setSuggestions([]); setShowSuggestions(false) }
+              }}
               onFocus={() => { if (mode === 'tag' && suggestions.length > 0) setShowSuggestions(true) }}
               placeholder={placeholder}
               className={`flex-1 min-w-[120px] text-sm text-gray-800 outline-none bg-transparent placeholder:text-gray-300 ${mode === 'tag' && selectedTags.length > 0 ? 'py-1' : 'py-2.5'}`}
@@ -164,7 +165,7 @@ export default function SearchBar({ defaultValue, defaultMode = 'all', defaultTa
         </button>
         {hasFilter && (
           <button type="button"
-            onClick={() => { setValue(''); setSelectedTags([]); router.push('/') }}
+            onClick={() => { setValue(''); setSuggestions([]); setShowSuggestions(false); setSelectedTags([]); router.push('/') }}
             className="px-3 py-2.5 rounded-lg border border-gray-200 text-gray-400 text-sm hover:text-gray-600 transition-colors shrink-0">
             ✕
           </button>

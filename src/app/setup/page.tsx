@@ -20,7 +20,7 @@ export default function SetupPage() {
       const profile = await res.json()
       if (profile?.nickname) router.push('/my')
     })
-  }, [])
+  }, [router])
 
   const handleSubmit = async () => {
     if (!nickname.trim()) { setError('닉네임을 입력해줘요'); return }

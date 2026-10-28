@@ -21,7 +21,7 @@ export default function TagInput({ tags, onChange }: Props) {
 
   useEffect(() => {
     const q = input.trim()
-    if (!q) { setSuggestions([]); setShowSug(false); return }
+    if (!q) return
     
     const timer = setTimeout(() => {
       fetch(`/api/tags?q=${encodeURIComponent(q)}`)
@@ -34,7 +34,7 @@ export default function TagInput({ tags, onChange }: Props) {
 
   const addTag = (name: string) => {
     const trimmed = name.trim()
-    if (!trimmed || tags.includes(trimmed)) { setInput(''); setShowSug(false); return }
+    if (!trimmed || tags.includes(trimmed)) { setInput(''); setSuggestions([]); setShowSug(false); return }
     onChange([...tags, trimmed])
     setInput('')
     setSuggestions([])
@@ -76,7 +76,10 @@ export default function TagInput({ tags, onChange }: Props) {
         <input
           ref={inputRef}
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={e => {
+            setInput(e.target.value)
+            if (!e.target.value.trim()) { setSuggestions([]); setShowSug(false) }
+          }}
           onKeyDown={handleKeyDown}
           onBlur={() => setTimeout(() => setShowSug(false), 150)}
           onFocus={() => input && setShowSug(suggestions.length > 0)}

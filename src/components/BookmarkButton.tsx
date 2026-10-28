@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
 export default function BookmarkButton({ sheetId }: { sheetId: string }) {
   const [bookmarked, setBookmarked] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function BookmarkButton({ sheetId }: { sheetId: string }) {
         setBookmarked(data.bookmarked)
       }
     })
-  }, [])
+  }, [sheetId])
 
   const handleBookmark = async () => {
     if (!user || loading) return

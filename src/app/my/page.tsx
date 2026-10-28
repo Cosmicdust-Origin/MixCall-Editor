@@ -4,13 +4,34 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
+
+interface MySheet {
+  id: string
+  isPublic: boolean
+  artistName: string | null
+  songTitle: string | null
+  updatedAt: string
+}
+
+interface MyBookmark {
+  id: string
+  sheetId: string
+  sheet: {
+    artistName: string | null
+    songTitle: string | null
+    updatedAt: string
+    user: { nickname: string | null } | null
+    _count: { likes: number }
+  }
+}
 
 export default function MyPage() {
   const router = useRouter()
-  const [sheets, setSheets] = useState<any[]>([])
-  const [bookmarks, setBookmarks] = useState<any[]>([])
+  const [sheets, setSheets] = useState<MySheet[]>([])
+  const [bookmarks, setBookmarks] = useState<MyBookmark[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [tab, setTab] = useState<'my' | 'bookmarks'>('my')
 
   useEffect(() => {
@@ -31,7 +52,7 @@ export default function MyPage() {
       setBookmarks(bookmarksData)
       setLoading(false)
     })
-  }, [])
+  }, [router])
 
   const handleDelete = async (id: string) => {
     if (!confirm('삭제할까요?')) return
