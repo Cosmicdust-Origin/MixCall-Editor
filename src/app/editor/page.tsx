@@ -10,6 +10,7 @@ import VideoEmbed from '@/components/VideoEmbed'
 import SheetBlocks from '@/components/SheetBlocks'
 import { getBlockNote } from '@/lib/blockNote'
 import { PasteMode, trimBlankLyricLines } from '@/lib/lyricLines'
+import { ChangeKind, useEditorHistory } from '@/lib/useEditorHistory'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
@@ -50,6 +51,13 @@ const UNSAVED_MESSAGE = '저장하지 않은 변경사항이 있습니다. 페�
 const getDraftKey = (sheetId: string | null) => `${DRAFT_PREFIX}${sheetId ?? 'new'}`
 const serializeDocument = (document: EditorDocument) => JSON.stringify(document)
 
+// 블록/줄/선택지 개수가 바뀌는 변경인지 비교하기 위한 키 (텍스트 입력은 키가 같다)
+const blockStructureKey = (blocks: Block[]) => blocks.map(block => {
+  if (block.type === 'lyric') return `${block.id}:${block.lines.map(line => line.id).join(',')}`
+  if (block.type === 'mix' || block.type === 'interlude') return `${block.id}:${block.alternatives?.length ?? 0}`
+  return block.id
+}).join('|')
+
 const createInitialBlocks = (): Block[] => [
   { id: crypto.randomUUID(), type: 'lyric', lines: [{ id: crypto.randomUUID(), jp: '', hira: '', ko: '' }] }
 ]
@@ -81,6 +89,9 @@ export default function EditorPage() {
   const guardActiveRef = useRef(false)
   const allowNextPopRef = useRef(false)
   const pendingNavigationRef = useRef<(() => void) | null>(null)
+  const shortcutRef = useRef<{ undo: () => void, redo: () => void, mode: 'edit' | 'preview' } | null>(null)
+
+  const history = useEditorHistory<EditorDocument>()
 
   const editorDocument = useMemo<EditorDocument>(() => ({
     artistName,
@@ -108,6 +119,54 @@ export default function EditorPage() {
     setBlocks(document.blocks)
     setReferenceVideos(document.referenceVideos)
     setTags(document.tags)
+  }
+
+  // 사용자 변경은 적용 전에 현재 문서를 기록한다.
+  const track = (kind: ChangeKind) => history.checkpoint(editorDocument, kind)
+
+  const trackBlocks = (next: Block[]) => {
+    track(blockStructureKey(blocks) !== blockStructureKey(next) ? 'action' : 'typing')
+    setBlocks(next)
+  }
+
+  const changeArtistName = (value: string) => {
+    track('typing')
+    setArtistName(value)
+  }
+
+  const changeSongTitle = (value: string) => {
+    track('typing')
+    setSongTitle(value)
+  }
+
+  const changeSongLang = (value: 'ko' | 'jp' | null) => {
+    track('action')
+    setSongLang(value)
+  }
+
+  const togglePublic = () => {
+    track('action')
+    setIsPublic(current => !current)
+  }
+
+  const changeTags = (next: string[]) => {
+    track('action')
+    setTags(next)
+  }
+
+  const changeReferenceVideos = (next: ReferenceVideo[]) => {
+    track(next.length !== referenceVideos.length ? 'action' : 'typing')
+    setReferenceVideos(next)
+  }
+
+  const handleUndo = () => {
+    const prev = history.undo(editorDocument)
+    if (prev) applyDocument(prev)
+  }
+
+  const handleRedo = () => {
+    const next = history.redo(editorDocument)
+    if (next) applyDocument(next)
   }
 
   useEffect(() => {
@@ -156,6 +215,7 @@ export default function EditorPage() {
 
       if (cancelled) return
       applyDocument(loadedDocument)
+      history.reset()
       setBaseline(serializeDocument(loadedDocument))
 
       try {
@@ -262,6 +322,37 @@ export default function EditorPage() {
     }
   }, [isDirty, ready])
 
+  // 단축키 핸들러가 항상 최신 문서를 쓰도록 매 렌더 후 갱신한다.
+  useEffect(() => {
+    shortcutRef.current = { undo: handleUndo, redo: handleRedo, mode }
+  })
+
+  useEffect(() => {
+    if (!ready) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.isComposing || !(event.ctrlKey || event.metaKey)) return
+      const shortcut = shortcutRef.current
+      if (!shortcut || shortcut.mode === 'preview') return
+
+      // 입력 칸 안에서는 브라우저 기본 되돌리기를 유지한다
+      const target = event.target as HTMLElement | null
+      if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return
+
+      const key = event.key.toLowerCase()
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        shortcut.undo()
+      } else if ((key === 'z' && event.shiftKey) || (key === 'y' && event.ctrlKey)) {
+        event.preventDefault()
+        shortcut.redo()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [ready])
+
   useEffect(() => {
     if (!ready || !autoSaveDraft || !isDirty) return
 
@@ -301,6 +392,7 @@ export default function EditorPage() {
   const restoreDraft = () => {
     if (!pendingDraft) return
     applyDocument(pendingDraft.document)
+    history.reset()
     setAutoSaveDraft(true)
     setDraftSavedAt(pendingDraft.savedAt)
     setPendingDraft(null)
@@ -319,6 +411,7 @@ export default function EditorPage() {
     ))
 
     if (!hasLyricContent) {
+      track('action')
       setLanguage(target)
       return
     }
@@ -327,6 +420,7 @@ export default function EditorPage() {
   }
 
   const switchKoreanToJapanese = (destination: 'jp' | 'ko') => {
+    track('action')
     if (destination === 'jp') {
       setBlocks(currentBlocks => currentBlocks.map(block => {
         if (block.type !== 'lyric') return block
@@ -344,6 +438,7 @@ export default function EditorPage() {
   }
 
   const switchJapaneseToKorean = (mode: 'original' | 'merge') => {
+    track('action')
     setBlocks(currentBlocks => currentBlocks.map(block => {
       if (block.type !== 'lyric') return block
 
@@ -390,6 +485,7 @@ export default function EditorPage() {
       : type === 'interlude'
       ? { id: crypto.randomUUID(), type: 'interlude', label: '간주', text: '' }
       : { id: crypto.randomUUID(), type: 'performance', performanceType: '오타게' }
+    track('action')
     setBlocks(p => [...p, newBlock])
   }
 
@@ -542,7 +638,7 @@ export default function EditorPage() {
           <div className="flex items-center gap-2 ml-auto">
             {user && (
               <button
-                onClick={() => setIsPublic(p => !p)}
+                onClick={togglePublic}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition-colors shrink-0 ${isPublic ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-400'}`}>
                 {isPublic ? '🌐 공개' : '🔒 비공개'}
               </button>
@@ -577,13 +673,13 @@ export default function EditorPage() {
         <div className="flex gap-2 mt-2">
           <input
             value={artistName}
-            onChange={e => setArtistName(e.target.value)}
+            onChange={e => changeArtistName(e.target.value)}
             placeholder="아티스트명"
             className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
           />
           <input
             value={songTitle}
-            onChange={e => setSongTitle(e.target.value)}
+            onChange={e => changeSongTitle(e.target.value)}
             placeholder="곡 제목"
             className="flex-1 bg-transparent border-b border-gray-300 text-sm text-gray-700 px-1 py-1 outline-none focus:border-gray-500 placeholder:text-gray-400"
           />
@@ -601,13 +697,13 @@ export default function EditorPage() {
           </div>
 
           <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
-            <button onClick={() => setSongLang('jp')}
+            <button onClick={() => changeSongLang('jp')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'jp' ? 'bg-red-100 text-red-500' : 'text-gray-500 hover:bg-gray-50'}`}>
               🇯🇵 일본 곡</button>
-            <button onClick={() => setSongLang('ko')}
+            <button onClick={() => changeSongLang('ko')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === 'ko' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
               🇰🇷 한국 곡</button>
-            <button onClick={() => setSongLang(null)}
+            <button onClick={() => changeSongLang(null)}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${songLang === null ? 'bg-gray-200 text-gray-600' : 'text-gray-500 hover:bg-gray-50'}`}>
               미분류</button>
           </div>
@@ -623,6 +719,34 @@ export default function EditorPage() {
         </div>
 
         <div className="flex items-center gap-3 mt-2 min-h-5 flex-wrap">
+          {mode === 'edit' && (
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={handleUndo}
+                onPointerDown={event => event.preventDefault()}
+                onMouseDown={event => event.preventDefault()}
+                disabled={!history.canUndo}
+                aria-label="되돌리기"
+                title="되돌리기 (Ctrl+Z)"
+                className="text-sm leading-none px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                onClick={handleRedo}
+                onPointerDown={event => event.preventDefault()}
+                onMouseDown={event => event.preventDefault()}
+                disabled={!history.canRedo}
+                aria-label="다시 실행"
+                title="다시 실행 (Ctrl+Shift+Z)"
+                className="text-sm leading-none px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
+              >
+                ↷
+              </button>
+            </div>
+          )}
           <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -656,10 +780,10 @@ export default function EditorPage() {
             <div className="mb-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
               <ReferenceVideoManager
                 videos={referenceVideos}
-                onChange={setReferenceVideos}
+                onChange={changeReferenceVideos}
               />
               <div className="border-t border-gray-100" />
-              <TagInput tags={tags} onChange={setTags} />
+              <TagInput tags={tags} onChange={changeTags} />
             </div>
 
             {language === 'jp' && (
@@ -683,7 +807,7 @@ export default function EditorPage() {
               </div>
             )}
 
-            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} onChange={setBlocks} />
+            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} onChange={trackBlocks} />
             <div className="flex gap-2 mt-4 justify-center flex-wrap">
               <button onClick={() => addBlock('lyric')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors">
