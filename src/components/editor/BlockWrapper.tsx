@@ -111,7 +111,7 @@ export default function BlockWrapper({
         />
       </div>
 
-      <div className={`flex gap-1 px-4 pb-3 flex-wrap transition-opacity ${hover ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`flex gap-1 px-4 pb-3 flex-wrap transition-opacity ${hover ? 'opacity-100' : 'opacity-0 [@media(hover:none)]:opacity-100'}`}>
         <button onClick={onMoveUp} disabled={isFirst}
           className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 disabled:opacity-25 hover:text-gray-700 hover:border-gray-400">↑</button>
         <button onClick={onMoveDown} disabled={isLast}

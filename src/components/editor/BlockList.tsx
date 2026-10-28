@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { Block, LyricBlock, MixBlock, InterludeBlock, PerformanceBlock, Language } from '@/types'
 import LyricBlockComp from './LyricBlock'
 import MixBlockComp from './MixBlock'
@@ -133,27 +134,47 @@ export default function BlockList({ blocks, language, onChange }: Props) {
           }),
         }
 
-        if (block.type === 'lyric') return (
-          <LyricBlockComp key={block.id} block={block as LyricBlock}
+        let content: React.ReactNode = null
+        if (block.type === 'lyric') content = (
+          <LyricBlockComp block={block as LyricBlock}
             language={language}
             onChange={updated => updateBlock(block.id, updated)}
             onSplit={(lineIdx) => splitBlock(block.id, lineIdx)}
             {...commonProps} />
         )
-        if (block.type === 'mix') return (
-          <MixBlockComp key={block.id} block={block as MixBlock}
+        else if (block.type === 'mix') content = (
+          <MixBlockComp block={block as MixBlock}
             onChange={updated => updateBlock(block.id, updated)}
             {...commonProps} />
         )
-        if (block.type === 'interlude') return (
-          <InterludeBlockComp key={block.id} block={block as InterludeBlock}
+        else if (block.type === 'interlude') content = (
+          <InterludeBlockComp block={block as InterludeBlock}
             onChange={updated => updateBlock(block.id, updated)}
             {...commonProps} />
         )
-        if (block.type === 'performance') return (
-          <PerformanceBlockComp key={block.id} block={block as PerformanceBlock}
+        else if (block.type === 'performance') content = (
+          <PerformanceBlockComp block={block as PerformanceBlock}
             onChange={updated => updateBlock(block.id, updated)}
             {...commonProps} />
+        )
+
+        return (
+          <Fragment key={block.id}>
+            {canMergeWithPrev && (
+              <div className="relative h-6 flex items-center justify-center my-1">
+                <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-gray-300" />
+                <button
+                  type="button"
+                  aria-label="위 가사 블록과 합치기"
+                  onClick={() => mergeWithPrev(block.id)}
+                  className="relative bg-white border border-gray-400 rounded-full text-xs px-2.5 py-0.5 text-gray-600 hover:text-blue-500 hover:border-blue-300 transition-colors shadow-sm z-10"
+                >
+                  ⤒ 합치기
+                </button>
+              </div>
+            )}
+            {content}
+          </Fragment>
         )
       })}
     </div>
