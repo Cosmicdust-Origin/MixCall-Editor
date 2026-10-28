@@ -6,11 +6,13 @@ import type { User } from '@supabase/supabase-js'
 
 interface Comment {
   id: string
+  userId: string
   content: string
   createdAt: string
   user: { nickname: string | null }
   replies: {
     id: string
+    userId: string
     content: string
     createdAt: string
     user: { nickname: string | null }
@@ -115,7 +117,7 @@ export default function Comments({ sheetId }: { sheetId: string }) {
                     답글
                   </button>
                 )}
-                {user?.id === comment.id && (
+                {user?.id === comment.userId && (
                   <button
                     onClick={() => handleDelete(comment.id)}
                     className="text-xs px-2 py-1 rounded border border-red-100 text-red-300 hover:text-red-500">
@@ -139,7 +141,7 @@ export default function Comments({ sheetId }: { sheetId: string }) {
                       </div>
                       <p className="text-sm text-gray-800 leading-relaxed">{reply.content}</p>
                     </div>
-                    {user?.id === reply.id && (
+                    {user?.id === reply.userId && (
                       <button
                         onClick={() => handleDelete(reply.id)}
                         className="text-xs px-2 py-1 rounded border border-red-100 text-red-300 hover:text-red-500 shrink-0">
