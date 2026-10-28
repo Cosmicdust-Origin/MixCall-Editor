@@ -7,14 +7,16 @@ import MixBlockComp from './MixBlock'
 import InterludeBlockComp from './InterludeBlock'
 import PerformanceBlockComp from './PerformanceBlock'
 import { getBlockNote } from '@/lib/blockNote'
+import { PasteMode } from '@/lib/lyricLines'
 
 interface Props {
   blocks: Block[]
   language: Language
+  pasteMode: PasteMode
   onChange: (blocks: Block[]) => void
 }
 
-export default function BlockList({ blocks, language, onChange }: Props) {
+export default function BlockList({ blocks, language, pasteMode, onChange }: Props) {
   const updateBlock = (id: string, updated: Block) => {
     onChange(blocks.map(b => b.id === id ? updated : b))
   }
@@ -138,6 +140,7 @@ export default function BlockList({ blocks, language, onChange }: Props) {
         if (block.type === 'lyric') content = (
           <LyricBlockComp block={block as LyricBlock}
             language={language}
+            pasteMode={pasteMode}
             onChange={updated => updateBlock(block.id, updated)}
             onSplit={(lineIdx) => splitBlock(block.id, lineIdx)}
             {...commonProps} />

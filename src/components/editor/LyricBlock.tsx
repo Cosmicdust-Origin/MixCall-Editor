@@ -2,10 +2,12 @@
 
 import { LyricBlock, LyricLine, Language } from '@/types'
 import BlockWrapper from './BlockWrapper'
+import { PasteMode, createLyricLine, parseJapaneseKoreanPaste, splitPastedLines } from '@/lib/lyricLines'
 
 interface Props {
   block: LyricBlock
   language: Language
+  pasteMode: PasteMode
   onChange: (block: LyricBlock) => void
   onSplit: (lineIdx: number) => void
   isFirst: boolean
@@ -25,48 +27,6 @@ interface Props {
   onNoteChange: (note: string) => void
 }
 
-const hasJapaneseText = (text: string) => /[\u3040-\u30ff\u3400-\u9fff]/.test(text)
-const hasKoreanText = (text: string) => /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text)
-
-function createLyricLine(fields: Partial<Pick<LyricLine, 'jp' | 'hira' | 'ko'>>): LyricLine {
-  return {
-    id: crypto.randomUUID(),
-    jp: fields.jp ?? '',
-    hira: fields.hira ?? '',
-    ko: fields.ko ?? '',
-  }
-}
-
-function parseJapaneseKoreanPaste(lines: string[], field: 'jp' | 'ko'): LyricLine[] {
-  if (field === 'ko') {
-    return lines.map(text => createLyricLine({ ko: text }))
-  }
-
-  const shouldPairReadings = lines.some(hasJapaneseText) && lines.some(line => hasKoreanText(line) && !hasJapaneseText(line))
-  if (!shouldPairReadings) {
-    return lines.map(text => createLyricLine({ jp: text }))
-  }
-
-  const parsed: LyricLine[] = []
-  for (let i = 0; i < lines.length; i += 1) {
-    const current = lines[i]
-    const next = lines[i + 1]
-
-    if (hasJapaneseText(current)) {
-      if (next && hasKoreanText(next) && !hasJapaneseText(next)) {
-        parsed.push(createLyricLine({ jp: current, ko: next }))
-        i += 1
-      } else {
-        parsed.push(createLyricLine({ jp: current }))
-      }
-    } else {
-      parsed.push(createLyricLine({ ko: current }))
-    }
-  }
-
-  return parsed
-}
-
 function lyricFields(line: LyricLine): Pick<LyricLine, 'jp' | 'hira' | 'ko'> {
   return {
     jp: line.jp,
@@ -75,7 +35,7 @@ function lyricFields(line: LyricLine): Pick<LyricLine, 'jp' | 'hira' | 'ko'> {
   }
 }
 
-export default function LyricBlockComp({ block, language, onChange, onSplit, ...wrapperProps }: Props) {
+export default function LyricBlockComp({ block, language, pasteMode, onChange, onSplit, ...wrapperProps }: Props) {
 
   const updateLine = (id: string, field: keyof LyricLine, value: string) => {
     onChange({ ...block, lines: block.lines.map(l => l.id === id ? { ...l, [field]: value } : l) })
@@ -99,15 +59,31 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
     onChange({ ...block, lines: next })
   }
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>, lineId: string, field: 'jp' | 'ko') => {
-    const text = e.clipboardData.getData('text')
-    const pasted = text.split('\n').map(s => s.trim()).filter(Boolean)
+  const handlePaste = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    lineId: string,
+    field: 'jp' | 'ko',
+    target: 'main' | 'reading',
+  ) => {
+    const pasted = splitPastedLines(e.clipboardData.getData('text'))
     if (pasted.length <= 1) return // 줄바꿈 없으면 기본 붙여넣기
 
     e.preventDefault()
     const currentIdx = block.lines.findIndex(l => l.id === lineId)
     const newLines = [...block.lines]
-    const parsedLines = parseJapaneseKoreanPaste(pasted, field)
+
+    // 발음칸: 현재 줄부터 아래로 순서대로 발음만 채운다. (원문은 건드리지 않음)
+    if (target === 'reading') {
+      pasted.forEach((text, k) => {
+        const idx = currentIdx + k
+        if (idx < newLines.length) newLines[idx] = { ...newLines[idx], ko: text }
+        else newLines.push(createLyricLine({ ko: text }))
+      })
+      onChange({ ...block, lines: newLines })
+      return
+    }
+
+    const parsedLines = parseJapaneseKoreanPaste(pasted, field, pasteMode)
 
     newLines[currentIdx] = { ...newLines[currentIdx], ...lyricFields(parsedLines[0]) }
 
@@ -125,7 +101,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                 <input
                   value={language === 'jp' ? line.jp : line.ko}
                   onChange={e => updateLine(line.id, language === 'jp' ? 'jp' : 'ko', e.target.value)}
-                  onPaste={e => handlePaste(e, line.id, language === 'jp' ? 'jp' : 'ko')}
+                  onPaste={e => handlePaste(e, line.id, language === 'jp' ? 'jp' : 'ko', 'main')}
                   placeholder={language === 'jp' ? '일본어 가사 입력...' : '한국어 가사 입력...'}
                   className="flex-1 w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-900 text-sm outline-none focus:border-gray-400 placeholder:text-gray-300"
                 />
@@ -133,7 +109,7 @@ export default function LyricBlockComp({ block, language, onChange, onSplit, ...
                   <input
                     value={line.ko}
                     onChange={e => updateLine(line.id, 'ko', e.target.value)}
-                    onPaste={e => handlePaste(e, line.id, 'ko')}
+                    onPaste={e => handlePaste(e, line.id, 'ko', 'reading')}
                     placeholder="한국어 발음 (선택)"
                     className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-blue-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
                   />

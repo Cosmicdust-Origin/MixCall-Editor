@@ -5,9 +5,11 @@ import { Block, Language, LyricLine, ReferenceVideo } from '@/types'
 import BlockList from '@/components/editor/BlockList'
 import ReferenceVideoManager from '@/components/editor/ReferenceVideoManager'
 import TagInput from '@/components/editor/TagInput'
+import QuickInsertBar from '@/components/editor/QuickInsertBar'
 import VideoEmbed from '@/components/VideoEmbed'
-import BlockNote from '@/components/BlockNote'
+import SheetBlocks from '@/components/SheetBlocks'
 import { getBlockNote } from '@/lib/blockNote'
+import { PasteMode, trimBlankLyricLines } from '@/lib/lyricLines'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
@@ -42,6 +44,7 @@ type LanguageSwitchRequest = {
 }
 
 const DRAFT_PREFIX = 'mix-call-editor:draft:'
+const PASTE_MODE_KEY = 'mix-call-editor:paste-mode'
 const UNSAVED_MESSAGE = '저장하지 않은 변경사항이 있습니다. 페이지를 나갈까요?'
 
 const getDraftKey = (sheetId: string | null) => `${DRAFT_PREFIX}${sheetId ?? 'new'}`
@@ -72,6 +75,7 @@ export default function EditorPage() {
   const [pendingDraft, setPendingDraft] = useState<LocalDraft | null>(null)
   const [languageSwitch, setLanguageSwitch] = useState<LanguageSwitchRequest | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [pasteMode, setPasteMode] = useState<PasteMode>('auto')
 
   const dirtyRef = useRef(false)
   const guardActiveRef = useRef(false)
@@ -178,6 +182,28 @@ export default function EditorPage() {
     // 초기 상태를 한 번만 서버/로컬 저장소와 맞춘다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 붙여넣기 방식은 기기별 편의 설정이라 localStorage에만 저장한다. (hydration 불일치를 피해 마운트 후에 읽음)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const stored = localStorage.getItem(PASTE_MODE_KEY)
+        if (stored === 'auto' || stored === 'pairs') setPasteMode(stored)
+      } catch {
+        // 저장소를 쓸 수 없으면 기본값 유지
+      }
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const changePasteMode = (next: PasteMode) => {
+    setPasteMode(next)
+    try {
+      localStorage.setItem(PASTE_MODE_KEY, next)
+    } catch {
+      // 저장 실패는 무시
+    }
+  }
 
   useEffect(() => {
     dirtyRef.current = isDirty
@@ -617,9 +643,11 @@ export default function EditorPage() {
             </span>
           )}
         </div>
+
+        <QuickInsertBar />
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main data-quick-insert-scope className="max-w-2xl mx-auto px-4 py-6">
         {mode === 'edit' ? (
           <>
             {/* 곡 메타 카드: 참고영상 + 태그 */}
@@ -632,7 +660,28 @@ export default function EditorPage() {
               <TagInput tags={tags} onChange={setTags} />
             </div>
 
-            <BlockList blocks={blocks} language={language} onChange={setBlocks} />
+            {language === 'jp' && (
+              <div className="mb-3 flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-medium text-gray-500 shrink-0">가사 붙여넣기</span>
+                  <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+                    <button type="button" aria-pressed={pasteMode === 'auto'} onClick={() => changePasteMode('auto')}
+                      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${pasteMode === 'auto' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+                      자동 판별</button>
+                    <button type="button" aria-pressed={pasteMode === 'pairs'} onClick={() => changePasteMode('pairs')}
+                      className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${pasteMode === 'pairs' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+                      2줄씩 (원문·발음)</button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">
+                  {pasteMode === 'auto'
+                    ? '일본어 줄 다음의 한글 줄을 발음으로 자동 연결'
+                    : '홀수 줄은 원문, 짝수 줄은 발음 (빈 줄 기준으로 끊어서)'}
+                </p>
+              </div>
+            )}
+
+            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} onChange={setBlocks} />
             <div className="flex gap-2 mt-4 justify-center flex-wrap">
               <button onClick={() => addBlock('lyric')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors">
@@ -664,7 +713,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
   const handleCopy = () => {
     const text = blocks.map(b => {
       let content = ''
-      if (b.type === 'lyric') content = b.lines.map(l => {
+      if (b.type === 'lyric') content = trimBlankLyricLines(b.lines).map(l => {
         if (language === 'ko') return l.ko
         return [l.jp, l.hira, l.ko].filter(Boolean).join('\n')
       }).join('\n')
@@ -733,59 +782,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
             {songTitle && <h2 className="text-gray-900 font-bold text-lg">{songTitle}</h2>}
           </div>
         )}
-        {blocks.map(block => (
-          <div key={block.id} className="mb-4">
-            {block.type === 'lyric' && block.lines.map(line =>
-              (language === 'jp' ? line.jp : line.ko) ? (
-                <div key={line.id} className="mb-2">
-                  <p className="text-gray-900 font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                    {language === 'jp' ? line.jp : line.ko}
-                  </p>
-                  {language === 'jp' && line.hira && <p className="text-gray-400 text-xs whitespace-pre-wrap">{line.hira}</p>}
-                  {language === 'jp' && line.ko && <p className="text-blue-500 text-xs font-medium whitespace-pre-wrap">{line.ko}</p>}
-                </div>
-              ) : null
-            )}
-            {block.type === 'mix' && (
-              <div>
-                {block.text && (
-                  <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{block.text}</p>
-                )}
-                {(block.alternatives ?? []).map(alt => (
-                  <div key={alt.id} className="mt-1">
-                    <span className="text-xs font-bold text-orange-400">또는</span>
-                    <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{alt.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {block.type === 'interlude' && (
-              <div className="my-2">
-                <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">{block.label}</span>
-                {block.text && <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap mt-1">{block.text}</p>}
-                {(block.alternatives ?? []).map(alternative => (
-                  <div key={alternative.id} className="mt-1">
-                    <span className="text-xs font-bold text-orange-400">또는</span>
-                    <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{alternative.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {block.type === 'performance' && (
-              <div className="my-2 flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded">
-                  {block.performanceType === '기타' && block.customLabel
-                    ? block.customLabel
-                    : block.performanceType}
-                </span>
-              </div>
-            )}
-            <BlockNote note={getBlockNote(block)} />
-            {block.referenceUrl && (
-              <VideoEmbed url={block.referenceUrl} compact={false} />
-            )}
-          </div>
-        ))}
+        <SheetBlocks blocks={blocks} />
       </div>
     </div>
   )
