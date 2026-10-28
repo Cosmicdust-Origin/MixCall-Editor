@@ -367,11 +367,13 @@ export default function EditorPage() {
           )
           if (values.length === 0) return [{ ...line, jp: '', hira: '', ko: '' }]
 
+          // 믹스는 마지막 줄(발음 아래)에 붙여 유지한다
           return values.map<LyricLine>((value, index) => ({
             id: index === 0 ? line.id : crypto.randomUUID(),
             jp: '',
             hira: '',
             ko: value,
+            ...(line.mix !== undefined && index === values.length - 1 && { mix: line.mix }),
           }))
         }),
       }
@@ -714,8 +716,8 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
     const text = blocks.map(b => {
       let content = ''
       if (b.type === 'lyric') content = trimBlankLyricLines(b.lines).map(l => {
-        if (language === 'ko') return l.ko
-        return [l.jp, l.hira, l.ko].filter(Boolean).join('\n')
+        if (language === 'ko') return [l.ko, l.mix].filter(Boolean).join('\n')
+        return [l.jp, l.hira, l.ko, l.mix].filter(Boolean).join('\n')
       }).join('\n')
       if (b.type === 'mix') {
         content = [

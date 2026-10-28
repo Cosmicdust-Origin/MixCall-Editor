@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { LyricBlock, LyricLine, Language } from '@/types'
 import BlockWrapper from './BlockWrapper'
 import { PasteMode, createLyricLine, parseJapaneseKoreanPaste, splitPastedLines } from '@/lib/lyricLines'
@@ -36,9 +37,16 @@ function lyricFields(line: LyricLine): Pick<LyricLine, 'jp' | 'hira' | 'ko'> {
 }
 
 export default function LyricBlockComp({ block, language, pasteMode, onChange, onSplit, ...wrapperProps }: Props) {
+  // '+믹스'로 방금 연 줄에만 자동 포커스 (저장된 빈 믹스칸이 로드 시 포커스를 가져가지 않도록)
+  const [openedMixId, setOpenedMixId] = useState<string | null>(null)
 
-  const updateLine = (id: string, field: keyof LyricLine, value: string) => {
+  const updateLine = (id: string, field: 'jp' | 'hira' | 'ko', value: string) => {
     onChange({ ...block, lines: block.lines.map(l => l.id === id ? { ...l, [field]: value } : l) })
+  }
+
+  // 믹스: undefined면 입력칸 닫기, ''면 빈 입력칸 열기
+  const setLineMix = (id: string, value: string | undefined) => {
+    onChange({ ...block, lines: block.lines.map(l => l.id === id ? { ...l, mix: value } : l) })
   }
 
   const addLine = () => {
@@ -63,7 +71,7 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
     e: React.ClipboardEvent<HTMLInputElement>,
     lineId: string,
     field: 'jp' | 'ko',
-    target: 'main' | 'reading',
+    target: 'main' | 'reading' | 'mix',
   ) => {
     const pasted = splitPastedLines(e.clipboardData.getData('text'))
     if (pasted.length <= 1) return // 줄바꿈 없으면 기본 붙여넣기
@@ -72,12 +80,19 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
     const currentIdx = block.lines.findIndex(l => l.id === lineId)
     const newLines = [...block.lines]
 
-    // 발음칸: 현재 줄부터 아래로 순서대로 발음만 채운다. (원문은 건드리지 않음)
-    if (target === 'reading') {
+    // 발음칸/믹스칸: 현재 줄부터 아래로 순서대로 해당 칸만 채운다. (나머지는 건드리지 않음)
+    if (target === 'reading' || target === 'mix') {
+      const fillField = target === 'reading' ? 'ko' : 'mix'
       pasted.forEach((text, k) => {
         const idx = currentIdx + k
-        if (idx < newLines.length) newLines[idx] = { ...newLines[idx], ko: text }
-        else newLines.push(createLyricLine({ ko: text }))
+        // 믹스칸의 빈 줄은 믹스가 없던 줄에 빈 입력칸을 열지 않고 건너뛴다
+        const skipEmptyMix = fillField === 'mix' && text === ''
+        if (idx < newLines.length) {
+          if (skipEmptyMix && newLines[idx].mix === undefined) return
+          newLines[idx] = { ...newLines[idx], [fillField]: text }
+        } else {
+          newLines.push(createLyricLine(skipEmptyMix ? {} : { [fillField]: text }))
+        }
       })
       onChange({ ...block, lines: newLines })
       return
@@ -114,6 +129,23 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
                     className="bg-gray-50 border border-gray-100 rounded px-3 py-1.5 text-blue-600 text-xs outline-none focus:border-gray-300 placeholder:text-gray-300"
                   />
                 )}
+                {line.mix !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={line.mix}
+                      onChange={e => setLineMix(line.id, e.target.value)}
+                      onPaste={e => handlePaste(e, line.id, 'ko', 'mix')}
+                      placeholder="믹스/콜 (선택)"
+                      autoFocus={openedMixId === line.id}
+                      className="flex-1 min-w-0 bg-red-50/50 border border-red-100 rounded px-3 py-1.5 text-red-600 font-bold text-xs outline-none focus:border-red-300 placeholder:text-red-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLineMix(line.id, undefined)}
+                      aria-label="믹스 삭제"
+                      className="text-xs text-red-300 hover:text-red-500 shrink-0">✕</button>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-1 mt-1 shrink-0">
                 <button
@@ -125,9 +157,23 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
                   disabled={idx === block.lines.length - 1}
                   className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↓</button>
               </div>
-              {block.lines.length > 1 && (
-                <button onClick={() => removeLine(line.id)}
-                  className="mt-2 text-gray-500 hover:text-red-500 text-sm transition-colors shrink-0">✕</button>
+              {(block.lines.length > 1 || line.mix === undefined) && (
+                <div className="flex flex-col items-center gap-1 mt-2 shrink-0">
+                  {block.lines.length > 1 && (
+                    <button onClick={() => removeLine(line.id)}
+                      className="text-gray-500 hover:text-red-500 text-sm leading-none transition-colors">✕</button>
+                  )}
+                  {line.mix === undefined && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenedMixId(line.id)
+                        setLineMix(line.id, '')
+                      }}
+                      aria-label="이 줄에 믹스 추가"
+                      className="text-[10px] leading-none px-1 py-0.5 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-300">+믹스</button>
+                  )}
+                </div>
               )}
             </div>
 

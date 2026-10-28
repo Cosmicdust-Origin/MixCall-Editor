@@ -13,6 +13,7 @@ export interface LyricLine {
   jp?: string;   // 일본어 가사
   hira?: string; // 히라가나 (수동입력)
   ko?: string;   // 한국어 발음
+  mix?: string;  // 가사와 겹치는 믹스/콜 (선택)
 }
 
 export interface LyricBlock extends BaseBlock {

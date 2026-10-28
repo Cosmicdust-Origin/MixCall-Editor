@@ -1,9 +1,9 @@
 import { LyricLine } from '@/types'
 
-// 줄이 비어 있는 경우는 jp, hira, ko에 글자가 하나도 없을 때뿐이다.
+// 줄이 비어 있는 경우는 jp, hira, ko, mix에 글자가 하나도 없을 때뿐이다.
 // 공백만 있는 줄(공백, 'ㅤ' U+3164, U+3000)은 의도적인 간격이므로 비어 있는 줄이 아니다.
 export function isBlankLyricLine(line: LyricLine): boolean {
-  return !line.jp && !line.hira && !line.ko
+  return !line.jp && !line.hira && !line.ko && !line.mix
 }
 
 // 블록 맨 앞과 맨 뒤의 빈 줄은 버리고, 중간의 빈 줄은 유지한다.
@@ -22,12 +22,14 @@ export type PasteMode = 'auto' | 'pairs'
 const hasJapaneseText = (text: string) => /[\u3040-\u30ff\u3400-\u9fff]/.test(text)
 const hasKoreanText = (text: string) => /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text)
 
-export function createLyricLine(fields: Partial<Pick<LyricLine, 'jp' | 'hira' | 'ko'>>): LyricLine {
+export function createLyricLine(fields: Partial<Pick<LyricLine, 'jp' | 'hira' | 'ko' | 'mix'>>): LyricLine {
   return {
     id: crypto.randomUUID(),
     jp: fields.jp ?? '',
     hira: fields.hira ?? '',
     ko: fields.ko ?? '',
+    // mix는 값이 있을 때만 넣는다 (기존 줄에 mix: ''가 쓰이지 않도록)
+    ...(fields.mix !== undefined && { mix: fields.mix }),
   }
 }
 

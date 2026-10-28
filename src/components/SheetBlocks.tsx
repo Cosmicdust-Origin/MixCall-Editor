@@ -17,17 +17,22 @@ export default function SheetBlocks({ blocks }: { blocks: Block[] }) {
                 <div key={line.id} aria-hidden="true" className="mb-2 text-sm leading-relaxed">&nbsp;</div>
               )
             }
-            if (!(line.jp || line.ko)) return null
+            if (!(line.jp || line.ko || line.mix)) return null
             return (
               <div key={line.id} className="mb-2">
-                <p className="text-gray-900 font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                  {line.jp || line.ko}
-                </p>
+                {(line.jp || line.ko) && (
+                  <p className="text-gray-900 font-medium text-sm leading-relaxed whitespace-pre-wrap">
+                    {line.jp || line.ko}
+                  </p>
+                )}
                 {line.jp && line.hira && (
                   <p className="text-gray-400 text-xs leading-relaxed whitespace-pre-wrap">{line.hira}</p>
                 )}
                 {line.jp && line.ko && (
                   <p className="text-blue-500 text-xs font-medium leading-relaxed whitespace-pre-wrap">{line.ko}</p>
+                )}
+                {line.mix && (
+                  <p className="text-red-600 font-bold text-xs leading-relaxed whitespace-pre-wrap">{line.mix}</p>
                 )}
               </div>
             )
