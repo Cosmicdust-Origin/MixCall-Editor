@@ -1,15 +1,21 @@
-import { Block, InterludeBlock } from '@/types'
+import { Block, InterludeBlock, ReferenceVideo } from '@/types'
 import BlockNote from '@/components/BlockNote'
+import SectionLabel from '@/components/SectionLabel'
 import VideoEmbed from '@/components/VideoEmbed'
 import { getBlockNote } from '@/lib/blockNote'
 import { isBlankLyricLine, trimBlankLyricLines } from '@/lib/lyricLines'
 import { SECTION_BADGE_CLASS, getSectionCategory } from '@/lib/sectionLabels'
+import { getSectionTime } from '@/lib/sectionTime'
+import { parseYouTubeUrl } from '@/lib/youtube'
 
 const isLabelOnlyInterlude = (block: Block): block is InterludeBlock =>
   block.type === 'interlude' && !block.text?.trim() && !(block.alternatives ?? []).length
 
 // 공개 콜표와 에디터 미리보기가 함께 쓰는 블록 렌더러 (서버/클라이언트 공용)
-export default function SheetBlocks({ blocks }: { blocks: Block[] }) {
+export default function SheetBlocks({ blocks, referenceVideos }: { blocks: Block[]; referenceVideos?: ReferenceVideo[] }) {
+  // 구간 라벨 탭 시 재생할 콜표 대표 영상 (첫 번째 유튜브 링크)
+  const sheetVideoId = referenceVideos?.map(v => parseYouTubeUrl(v.url)?.id).find(Boolean) ?? null
+
   return (
     <>
       {blocks.map(block => (
@@ -65,9 +71,13 @@ export default function SheetBlocks({ blocks }: { blocks: Block[] }) {
           )}
           {block.type === 'interlude' && (
             <div className="mt-2">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${SECTION_BADGE_CLASS[getSectionCategory(block.label)]}`}>
-                {block.label}
-              </span>
+              <SectionLabel
+                blockId={block.id}
+                label={block.label}
+                badgeClass={SECTION_BADGE_CLASS[getSectionCategory(block.label)]}
+                time={getSectionTime(block)}
+                videoId={(block.referenceUrl ? parseYouTubeUrl(block.referenceUrl)?.id : null) ?? sheetVideoId}
+              />
               {block.text && (
                 <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap mt-1">
                   {block.text}

@@ -9,6 +9,7 @@ import {
   SECTION_GROUPS,
   getSectionCategory,
 } from '@/lib/sectionLabels'
+import { extractTimeFromLabel, formatTime, parseTimeInput } from '@/lib/sectionTime'
 import BlockWrapper from './BlockWrapper'
 import MixContentEditor from './MixContentEditor'
 
@@ -35,6 +36,23 @@ interface Props {
 export default function InterludeBlockComp({ block, onChange, ...wrapperProps }: Props) {
   const [showAll, setShowAll] = useState(false)
   const [mixOpen, setMixOpen] = useState(false)
+  // 시각 입력 초안 (null = 편집 중 아님). 평소엔 block.time을 그대로 보여 되돌리기가 바로 반영된다
+  const [timeDraft, setTimeDraft] = useState<string | null>(null)
+  const timeValue = timeDraft ?? (block.time !== undefined ? formatTime(block.time) : '')
+  const timeInvalid = timeDraft !== null && timeDraft.trim() !== '' && parseTimeInput(timeDraft) === null
+  const labelTime = block.time === undefined ? extractTimeFromLabel(block.label) : null
+
+  const commitTime = () => {
+    if (timeDraft !== null) {
+      if (timeDraft.trim() === '') {
+        onChange({ ...block, time: undefined })
+      } else {
+        const parsed = parseTimeInput(timeDraft)
+        if (parsed !== null) onChange({ ...block, time: parsed })
+      }
+    }
+    setTimeDraft(null)
+  }
 
   // 더보기에만 있는 템플릿 라벨이 선택돼 있으면 첫 줄에 그 칩을 함께 보여준다 (펼침은 사용자 토글만 따름)
   const quickLabels = ALL_SECTION_LABELS.includes(block.label) && !QUICK_SECTION_LABELS.includes(block.label)
@@ -79,6 +97,22 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
               onChange={event => onChange({ ...block, label: event.target.value })}
               placeholder="직접 입력"
               className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-400 outline-none focus:border-blue-400 placeholder:text-blue-200 w-20 bg-white"
+            />
+            <input
+              inputMode="numeric"
+              value={timeValue}
+              onFocus={() => setTimeDraft(timeValue)}
+              onChange={event => setTimeDraft(event.target.value)}
+              onBlur={commitTime}
+              onKeyDown={event => {
+                if (event.key === 'Enter') event.currentTarget.blur()
+              }}
+              placeholder={labelTime !== null ? formatTime(labelTime) : '⏱ 0:00'}
+              title={labelTime !== null ? '라벨에서 읽은 시각' : undefined}
+              aria-label="구간 시작 시각"
+              className={`text-xs px-2 py-1 rounded-full border w-16 bg-white outline-none placeholder:text-blue-200 ${
+                timeInvalid ? 'border-red-300 text-red-500' : 'border-blue-200 text-blue-500 focus:border-blue-400'
+              }`}
             />
           </div>
           {expanded && (

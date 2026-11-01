@@ -948,7 +948,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
             {songTitle && <h2 className="text-gray-900 font-bold text-lg">{songTitle}</h2>}
           </div>
         )}
-        <SheetBlocks blocks={blocks} />
+        <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} />
       </div>
     </div>
   )

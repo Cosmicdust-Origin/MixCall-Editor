@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { parseYouTubeUrl } from '@/lib/youtube';
 
 interface VideoEmbedProps {
   url: string;
@@ -8,41 +9,12 @@ interface VideoEmbedProps {
   compact?: boolean;
 }
 
-function parseYouTubeStartSeconds(u: URL): number | undefined {
-  const rawTime = u.searchParams.get('t') ?? u.searchParams.get('start') ?? u.hash.match(/(?:^#|[&#])t=([^&]+)/)?.[1]
-  if (!rawTime) return undefined
-
-  const value = rawTime.trim().toLowerCase()
-  if (/^\d+$/.test(value)) return Number(value)
-
-  const match = value.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/)
-  if (!match) return undefined
-
-  const hours = Number(match[1] ?? 0)
-  const minutes = Number(match[2] ?? 0)
-  const seconds = Number(match[3] ?? 0)
-  const total = hours * 3600 + minutes * 60 + seconds
-  return total > 0 ? total : undefined
-}
-
 function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: string; start?: number } {
   try {
-    const u = new URL(url);
-    const host = u.hostname.replace('www.', '');
+    const youtube = parseYouTubeUrl(url);
+    if (youtube) return { type: 'youtube', id: youtube.id, start: youtube.start };
 
-    if (host === 'youtube.com' || host === 'youtu.be') {
-      let videoId: string | null = null;
-      if (host === 'youtu.be') {
-        videoId = u.pathname.slice(1).split('?')[0];
-      } else if (u.pathname === '/watch') {
-        videoId = u.searchParams.get('v');
-      } else if (u.pathname.startsWith('/shorts/')) {
-        videoId = u.pathname.replace('/shorts/', '').split('?')[0];
-      } else if (u.pathname.startsWith('/embed/')) {
-        videoId = u.pathname.replace('/embed/', '').split('?')[0];
-      }
-      if (videoId) return { type: 'youtube', id: videoId, start: parseYouTubeStartSeconds(u) };
-    }
+    const host = new URL(url).hostname.replace('www.', '');
 
     if (host === 'twitter.com' || host === 'x.com') {
       return { type: 'twitter' };
@@ -52,6 +24,14 @@ function parseUrl(url: string): { type: 'youtube' | 'twitter' | 'other'; id?: st
   } catch {
     return { type: 'other' };
   }
+}
+
+// enablejsapi=1: 다른 영상이 재생될 때 postMessage로 일시정지할 수 있게 한다
+function embedSrc(id: string, start?: number) {
+  const params = new URLSearchParams();
+  if (start) params.set('start', String(start));
+  params.set('enablejsapi', '1');
+  return `https://www.youtube.com/embed/${id}?${params.toString()}`;
 }
 
 export default function VideoEmbed({ url, label, compact = false }: VideoEmbedProps) {
@@ -82,7 +62,7 @@ export default function VideoEmbed({ url, label, compact = false }: VideoEmbedPr
           <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
             <iframe
               className="absolute inset-0 w-full h-full rounded-lg"
-              src={`https://www.youtube.com/embed/${parsed.id}${parsed.start ? `?start=${parsed.start}` : ''}`}
+              src={embedSrc(parsed.id, parsed.start)}
               title={label ?? 'YouTube 참고영상'}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

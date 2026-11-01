@@ -140,7 +140,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
         )}
 
         <div className="bg-white rounded-xl px-3 py-5 sm:p-6 shadow border border-gray-100 font-sans">
-          <SheetBlocks blocks={blocks} />
+          <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} />
         </div>
 
         {isDevSnapshot ? (
