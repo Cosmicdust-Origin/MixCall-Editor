@@ -3,6 +3,7 @@ import BlockNote from '@/components/BlockNote'
 import VideoEmbed from '@/components/VideoEmbed'
 import { getBlockNote } from '@/lib/blockNote'
 import { isBlankLyricLine, trimBlankLyricLines } from '@/lib/lyricLines'
+import { SECTION_BADGE_CLASS, getSectionCategory } from '@/lib/sectionLabels'
 
 const isLabelOnlyInterlude = (block: Block): block is InterludeBlock =>
   block.type === 'interlude' && !block.text?.trim() && !(block.alternatives ?? []).length
@@ -64,7 +65,7 @@ export default function SheetBlocks({ blocks }: { blocks: Block[] }) {
           )}
           {block.type === 'interlude' && (
             <div className="mt-2">
-              <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">
+              <span className={`text-xs font-bold px-2 py-0.5 rounded ${SECTION_BADGE_CLASS[getSectionCategory(block.label)]}`}>
                 {block.label}
               </span>
               {block.text && (

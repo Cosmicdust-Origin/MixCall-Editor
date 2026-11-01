@@ -50,7 +50,7 @@ export default function BlockWrapper({
     interlude: {
       border: hover ? 'border-blue-400' : 'border-blue-200',
       bg: 'bg-blue-50',
-      label: 'INTERLUDE',
+      label: 'SECTION',
       labelColor: 'text-blue-400 bg-blue-50',
     },
     performance: {
@@ -130,7 +130,7 @@ export default function BlockWrapper({
         <button onClick={onInsertMix}
           className="text-xs px-2 py-1 rounded border border-red-300 text-red-400 hover:text-red-600">+ 믹스</button>
         <button onClick={onInsertInterlude}
-          className="text-xs px-2 py-1 rounded border border-blue-300 text-blue-400 hover:text-blue-600">+ 간주</button>
+          className="text-xs px-2 py-1 rounded border border-blue-300 text-blue-400 hover:text-blue-600">+ 구간</button>
         <button onClick={onInsertPerformance}
           className="text-xs px-2 py-1 rounded border border-purple-300 text-purple-400 hover:text-purple-600">+ 퍼포먼스</button>
       </div>

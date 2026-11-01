@@ -857,7 +857,7 @@ export default function EditorPage() {
                 + 믹스 블록</button>
               <button onClick={() => addBlock('interlude')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-blue-200 text-blue-300 hover:text-blue-500 hover:border-blue-400 transition-colors">
-                + 간주/전주</button>
+                + 구간</button>
               <button onClick={() => addBlock('performance')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-purple-200 text-purple-300 hover:text-purple-500 hover:border-purple-400 transition-colors">
                 + 퍼포먼스</button>
