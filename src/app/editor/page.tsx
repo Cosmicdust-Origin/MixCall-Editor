@@ -58,8 +58,9 @@ const blockStructureKey = (blocks: Block[]) => blocks.map(block => {
   return block.id
 }).join('|')
 
+// 서버/클라이언트 렌더 결과가 같도록 첫 빈 블록은 고정 ID를 쓴다 (data-block-id 하이드레이션 불일치 방지)
 const createInitialBlocks = (): Block[] => [
-  { id: crypto.randomUUID(), type: 'lyric', lines: [{ id: crypto.randomUUID(), jp: '', hira: '', ko: '' }] }
+  { id: 'initial-lyric-block', type: 'lyric', lines: [{ id: 'initial-lyric-line', jp: '', hira: '', ko: '' }] }
 ]
 
 export default function EditorPage() {
