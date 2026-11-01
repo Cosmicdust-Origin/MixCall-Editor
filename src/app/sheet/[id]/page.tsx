@@ -93,7 +93,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-3 sm:px-4 py-6">
         <div className="mb-4">
           {sheet.artistName && <p className="text-gray-400 text-sm">{sheet.artistName}</p>}
           <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        <div className="bg-white rounded-xl p-6 shadow border border-gray-100 font-sans">
+        <div className="bg-white rounded-xl px-3 py-5 sm:p-6 shadow border border-gray-100 font-sans">
           <SheetBlocks blocks={blocks} />
         </div>
 

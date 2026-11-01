@@ -90,6 +90,10 @@ export default function EditorPage() {
   const allowNextPopRef = useRef(false)
   const pendingNavigationRef = useRef<(() => void) | null>(null)
   const shortcutRef = useRef<{ undo: () => void, redo: () => void, mode: 'edit' | 'preview' } | null>(null)
+  // 편집/미리보기를 오갈 때 보던 위치를 유지하기 위한 기록
+  const lastBlockIdRef = useRef<string | null>(null)
+  const editScrollYRef = useRef(0)
+  const prevModeRef = useRef<'edit' | 'preview'>('edit')
 
   const history = useEditorHistory<EditorDocument>()
 
@@ -321,6 +325,41 @@ export default function EditorPage() {
       window.history.back()
     }
   }, [isDirty, ready])
+
+  // 마지막으로 포커스하거나 누른 블록을 기억한다.
+  useEffect(() => {
+    const remember = (event: Event) => {
+      const target = event.target
+      if (!(target instanceof Element) || !target.closest('main[data-quick-insert-scope]')) return
+      lastBlockIdRef.current = target.closest('[data-block-id]')?.getAttribute('data-block-id') ?? lastBlockIdRef.current
+    }
+    document.addEventListener('focusin', remember)
+    document.addEventListener('pointerdown', remember)
+    return () => {
+      document.removeEventListener('focusin', remember)
+      document.removeEventListener('pointerdown', remember)
+    }
+  }, [])
+
+  // 모드가 바뀐 뒤 기억한 블록을 화면 가운데로, 없으면 편집 모드는 저장해 둔 스크롤 위치로 돌아간다.
+  useEffect(() => {
+    if (prevModeRef.current === mode) return
+    prevModeRef.current = mode
+    const frame = requestAnimationFrame(() => {
+      const id = lastBlockIdRef.current
+      const el = id
+        ? document.querySelector(`main[data-quick-insert-scope] [data-block-id="${CSS.escape(id)}"]`)
+        : null
+      if (el) el.scrollIntoView({ block: 'center' })
+      else if (mode === 'edit') window.scrollTo(0, editScrollYRef.current)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [mode])
+
+  const changeMode = (next: 'edit' | 'preview') => {
+    if (mode === 'edit' && next === 'preview') editScrollYRef.current = window.scrollY
+    setMode(next)
+  }
 
   // 단축키 핸들러가 항상 최신 문서를 쓰도록 매 렌더 후 갱신한다.
   useEffect(() => {
@@ -709,10 +748,10 @@ export default function EditorPage() {
           </div>
 
           <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
-            <button onClick={() => setMode('edit')}
+            <button onClick={() => changeMode('edit')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'edit' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               ✏️ 편집</button>
-            <button onClick={() => setMode('preview')}
+            <button onClick={() => changeMode('preview')}
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               👁️ 미리보기</button>
           </div>
@@ -901,7 +940,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
         </div>
       )}
 
-      <div className="bg-white rounded-xl p-6 shadow border border-gray-100 font-sans">
+      <div className="bg-white rounded-xl px-3 py-5 sm:p-6 shadow border border-gray-100 font-sans">
         {(artistName || songTitle) && (
           <div className="mb-4 pb-3 border-b border-gray-100">
             {artistName && <p className="text-gray-400 text-sm">{artistName}</p>}

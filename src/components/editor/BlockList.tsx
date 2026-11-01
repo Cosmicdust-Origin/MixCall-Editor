@@ -176,7 +176,7 @@ export default function BlockList({ blocks, language, pasteMode, onChange }: Pro
                 </button>
               </div>
             )}
-            {content}
+            <div data-block-id={block.id}>{content}</div>
           </Fragment>
         )
       })}

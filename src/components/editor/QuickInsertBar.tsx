@@ -4,8 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 
 type TextField = HTMLInputElement | HTMLTextAreaElement
 
-const ITEMS = [
-  { key: 'ideographic-space', char: '　', label: '␣ 공백', ariaLabel: '전각 공백 넣기' },
+interface QuickItem {
+  key: string
+  char: string
+  label: string
+  ariaLabel: string
+  isText?: boolean
+}
+
+const ITEMS: QuickItem[] = [
+  // 전각 공백(U+3000)과, 사용자들이 좁은 투명 간격으로 쓰는 점자 빈칸(U+2800)
+  { key: 'ideographic-space', char: '\u3000', label: '␣ 전각', ariaLabel: '전각 공백 넣기', isText: true },
+  { key: 'braille-space', char: '\u2800', label: '␣ 반각', ariaLabel: '반각 공백 넣기', isText: true },
   ...['👏', '❤️', '🩷', '💜', '💚', '💛', '🧡', '💙', '🩵', '🤍', '🖤'].map(emoji => ({
     key: emoji,
     char: emoji,
@@ -73,6 +83,8 @@ export default function QuickInsertBar() {
     el.dispatchEvent(new Event('input', { bubbles: true }))
 
     const caret = start + char.length
+    // 값을 직접 바꾸면 커서가 끝으로 가므로 즉시 복원하고, 다음 프레임에 한 번 더 맞춘다.
+    el.setSelectionRange(caret, caret)
     requestAnimationFrame(() => {
       // 모바일에서 포커스를 잃었다면 다시 돌려준다.
       if (document.activeElement !== el) el.focus({ preventScroll: true })
@@ -95,7 +107,7 @@ export default function QuickInsertBar() {
           onClick={() => insert(item.char)}
           className="h-8 min-w-8 shrink-0 rounded-lg border border-gray-200 bg-white px-2 text-base leading-none text-gray-700 hover:bg-gray-50 active:bg-gray-100"
         >
-          {item.label === '␣ 공백' ? <span className="text-xs">{item.label}</span> : item.label}
+          {item.isText ? <span className="text-xs">{item.label}</span> : item.label}
         </button>
       ))}
       <span className="shrink-0 pl-1 text-[10px] text-gray-400">🩷🩵는 구형 기기에서 □로 보일 수 있어요</span>

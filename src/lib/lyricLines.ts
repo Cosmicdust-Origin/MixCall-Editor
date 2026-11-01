@@ -16,6 +16,21 @@ export function trimBlankLyricLines(lines: LyricLine[]): LyricLine[] {
   return lines.slice(start, end)
 }
 
+// 위아래 두 줄을 윗줄(id 유지) 하나로 잇는다. 칸마다 비어 있지 않은 쪽만 공백 한 칸으로 이어 붙인다.
+// mix는 양쪽 다 undefined면 키를 만들지 않고, 한쪽이라도 있으면 같은 방식으로 이어 붙인다.
+const joinText = (upper?: string, lower?: string) =>
+  [upper, lower].filter(s => s && s.length > 0).join(' ')
+
+export function joinLyricLines(upper: LyricLine, lower: LyricLine): LyricLine {
+  return {
+    id: upper.id,
+    jp: joinText(upper.jp, lower.jp),
+    hira: joinText(upper.hira, lower.hira),
+    ko: joinText(upper.ko, lower.ko),
+    ...((upper.mix !== undefined || lower.mix !== undefined) && { mix: joinText(upper.mix, lower.mix) }),
+  }
+}
+
 // 붙여넣기 방식: auto는 일본어/한글 줄을 자동 판별하고, pairs는 홀수 줄=원문, 짝수 줄=발음으로 읽는다.
 export type PasteMode = 'auto' | 'pairs'
 

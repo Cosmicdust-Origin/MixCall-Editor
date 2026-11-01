@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { LyricBlock, LyricLine, Language } from '@/types'
 import BlockWrapper from './BlockWrapper'
-import { PasteMode, createLyricLine, parseJapaneseKoreanPaste, splitPastedLines } from '@/lib/lyricLines'
+import { PasteMode, createLyricLine, joinLyricLines, parseJapaneseKoreanPaste, splitPastedLines } from '@/lib/lyricLines'
 
 interface Props {
   block: LyricBlock
@@ -56,6 +56,15 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
   const removeLine = (id: string) => {
     if (block.lines.length <= 1) return
     onChange({ ...block, lines: block.lines.filter(l => l.id !== id) })
+  }
+
+  // 위아래 두 줄을 윗줄 하나로 잇는다 (줄 id가 바뀌므로 되돌리기에 별도 단계로 기록됨)
+  const joinLines = (idx: number) => {
+    const lower = block.lines[idx + 1]
+    if (!lower) return
+    const lines = [...block.lines]
+    lines.splice(idx, 2, joinLyricLines(block.lines[idx], lower))
+    onChange({ ...block, lines })
   }
 
   const moveLine = (id: string, dir: 'up' | 'down') => {
@@ -180,11 +189,21 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
             {idx < block.lines.length - 1 && (
               <div className="relative h-6 flex items-center justify-center my-1">
                 <div className="absolute inset-x-0 top-1/2 border-t border-gray-300" />
-                <button
-                  onClick={() => onSplit(idx + 1)}
-                  className="relative bg-white border border-gray-400 rounded-full text-xs px-2.5 py-0.5 text-gray-600 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm z-10">
-                  ✂️ 분리
-                </button>
+                <div className="relative z-10 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSplit(idx + 1)}
+                    className="relative bg-white border border-gray-400 rounded-full text-xs px-2.5 py-0.5 text-gray-600 hover:text-red-500 hover:border-red-300 transition-colors shadow-sm z-10">
+                    ✂️ 분리
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="위아래 두 줄을 한 줄로 잇기"
+                    onClick={() => joinLines(idx)}
+                    className="relative bg-white border border-gray-400 rounded-full text-xs px-2.5 py-0.5 text-gray-600 hover:text-blue-500 hover:border-blue-300 transition-colors shadow-sm z-10">
+                    🔗 잇기
+                  </button>
+                </div>
               </div>
             )}
           </div>
