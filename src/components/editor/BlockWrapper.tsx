@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import VideoLinkInput from './VideoLinkInput'
 
 interface Props {
@@ -16,6 +16,9 @@ interface Props {
   onDelete: () => void
   onDuplicate: () => void
   onMergeWithPrev?: () => void
+  onCopyMix?: () => void
+  onPasteMix?: () => void
+  mixPasteCount?: number
   onInsertLyric: () => void
   onInsertMix: () => void
   onInsertInterlude: () => void
@@ -28,11 +31,25 @@ export default function BlockWrapper({
   referenceUrl, onReferenceUrlChange,
   note = '', onNoteChange,
   onMoveUp, onMoveDown, onDelete, onDuplicate, onMergeWithPrev,
+  onCopyMix, onPasteMix, mixPasteCount,
   onInsertLyric, onInsertMix, onInsertInterlude, onInsertPerformance,
   children
 }: Props) {
   const [hover, setHover] = useState(false)
   const [noteOpen, setNoteOpen] = useState(Boolean(note))
+  const [mixCopied, setMixCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+  }, [])
+
+  const handleCopyMix = () => {
+    onCopyMix?.()
+    setMixCopied(true)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => setMixCopied(false), 1500)
+  }
 
   const styles = {
     lyric: {
@@ -121,6 +138,14 @@ export default function BlockWrapper({
         {onMergeWithPrev && (
           <button onClick={onMergeWithPrev}
             className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">↑ 합치기</button>
+        )}
+        {onCopyMix && (
+          <button type="button" onClick={handleCopyMix}
+            className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-300">{mixCopied ? '✓ 복사됨' : '믹스 복사'}</button>
+        )}
+        {onPasteMix && (
+          <button type="button" onClick={onPasteMix}
+            className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-300">{`믹스 붙여넣기 (${mixPasteCount}줄)`}</button>
         )}
         <button onClick={onDelete}
           className="text-xs px-2 py-1 rounded border border-red-300 text-red-400 hover:text-red-600 hover:border-red-400">✕ 삭제</button>

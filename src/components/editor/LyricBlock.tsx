@@ -11,6 +11,9 @@ interface Props {
   pasteMode: PasteMode
   onChange: (block: LyricBlock) => void
   onSplit: (lineIdx: number) => void
+  onCopyMix?: () => void
+  onPasteMix?: () => void
+  mixPasteCount?: number
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void

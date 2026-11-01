@@ -80,6 +80,8 @@ export default function EditorPage() {
   const [baseline, setBaseline] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [autoSaveDraft, setAutoSaveDraft] = useState(false)
+  // 복사한 가사 블록의 줄별 믹스 (미리보기를 오가도 유지)
+  const [mixClipboard, setMixClipboard] = useState<(string | undefined)[] | null>(null)
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null)
   const [pendingDraft, setPendingDraft] = useState<LocalDraft | null>(null)
   const [languageSwitch, setLanguageSwitch] = useState<LanguageSwitchRequest | null>(null)
@@ -129,8 +131,8 @@ export default function EditorPage() {
   // 사용자 변경은 적용 전에 현재 문서를 기록한다.
   const track = (kind: ChangeKind) => history.checkpoint(editorDocument, kind)
 
-  const trackBlocks = (next: Block[]) => {
-    track(blockStructureKey(blocks) !== blockStructureKey(next) ? 'action' : 'typing')
+  const trackBlocks = (next: Block[], kind?: ChangeKind) => {
+    track(kind ?? (blockStructureKey(blocks) !== blockStructureKey(next) ? 'action' : 'typing'))
     setBlocks(next)
   }
 
@@ -847,7 +849,7 @@ export default function EditorPage() {
               </div>
             )}
 
-            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} onChange={trackBlocks} />
+            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} mixClipboard={mixClipboard} onCopyMix={setMixClipboard} onChange={trackBlocks} />
             <div className="flex gap-2 mt-4 justify-center flex-wrap">
               <button onClick={() => addBlock('lyric')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors">

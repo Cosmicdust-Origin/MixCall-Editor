@@ -1,22 +1,33 @@
 'use client'
 
 import { Fragment } from 'react'
-import { Block, LyricBlock, MixBlock, InterludeBlock, PerformanceBlock, Language } from '@/types'
+import { Block, LyricBlock, LyricLine, MixBlock, InterludeBlock, PerformanceBlock, Language } from '@/types'
 import LyricBlockComp from './LyricBlock'
 import MixBlockComp from './MixBlock'
 import InterludeBlockComp from './InterludeBlock'
 import PerformanceBlockComp from './PerformanceBlock'
 import { getBlockNote } from '@/lib/blockNote'
 import { PasteMode } from '@/lib/lyricLines'
+import { ChangeKind } from '@/lib/useEditorHistory'
 
 interface Props {
   blocks: Block[]
   language: Language
   pasteMode: PasteMode
-  onChange: (blocks: Block[]) => void
+  mixClipboard: (string | undefined)[] | null
+  onCopyMix: (mixes: (string | undefined)[]) => void
+  onChange: (blocks: Block[], kind?: ChangeKind) => void
 }
 
-export default function BlockList({ blocks, language, pasteMode, onChange }: Props) {
+// mix가 undefined면 키를 제거하고, 문자열이면 (빈 문자열 포함) 그대로 설정
+function withMix(line: LyricLine, mix: string | undefined): LyricLine {
+  if (mix !== undefined) return { ...line, mix }
+  const copy = { ...line }
+  delete copy.mix
+  return copy
+}
+
+export default function BlockList({ blocks, language, pasteMode, mixClipboard, onCopyMix, onChange }: Props) {
   const updateBlock = (id: string, updated: Block) => {
     onChange(blocks.map(b => b.id === id ? updated : b))
   }
@@ -103,6 +114,25 @@ export default function BlockList({ blocks, language, pasteMode, onChange }: Pro
     onChange(next)
   }
 
+  // 가사 블록의 줄별 믹스를 클립보드의 값으로 덮어쓴다 (모자라거나 남는 줄은 건드리지 않음)
+  const pasteMix = (id: string) => {
+    const clip = mixClipboard
+    const block = blocks.find(b => b.id === id)
+    if (!clip || !block || block.type !== 'lyric') return
+    const target = (block as LyricBlock).lines
+    const n = Math.min(clip.length, target.length)
+    const targetHasMix = target.slice(0, n).some(l => l.mix?.trim())
+    const lengthDiffers = clip.length !== target.length
+    if (targetHasMix || lengthDiffers) {
+      const parts: string[] = []
+      if (lengthDiffers) parts.push(`복사한 믹스 ${clip.length}줄 / 이 블록 ${target.length}줄 — 앞 ${n}줄에만 붙여넣습니다.`)
+      if (targetHasMix) parts.push('이 블록에 이미 있는 믹스는 덮어씁니다.')
+      if (!window.confirm(parts.join('\n') + '\n계속할까요?')) return
+    }
+    const lines = target.map((l, i) => i < n ? withMix(l, clip[i]) : l)
+    onChange(blocks.map(b => b.id === id ? { ...(block as LyricBlock), lines } : b), 'action')
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {blocks.map((block, idx) => {
@@ -143,6 +173,11 @@ export default function BlockList({ blocks, language, pasteMode, onChange }: Pro
             pasteMode={pasteMode}
             onChange={updated => updateBlock(block.id, updated)}
             onSplit={(lineIdx) => splitBlock(block.id, lineIdx)}
+            onCopyMix={(block as LyricBlock).lines.some(l => l.mix?.trim())
+              ? () => onCopyMix((block as LyricBlock).lines.map(l => l.mix))
+              : undefined}
+            onPasteMix={mixClipboard ? () => pasteMix(block.id) : undefined}
+            mixPasteCount={mixClipboard?.length}
             {...commonProps} />
         )
         else if (block.type === 'mix') content = (
