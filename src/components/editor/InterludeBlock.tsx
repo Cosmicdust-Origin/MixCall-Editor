@@ -11,6 +11,7 @@ import {
 } from '@/lib/sectionLabels'
 import { extractTimeFromLabel, formatTime, parseTimeInput } from '@/lib/sectionTime'
 import BlockWrapper from './BlockWrapper'
+import { useAdvancedEditor } from './EditorModeContext'
 import MixContentEditor from './MixContentEditor'
 
 interface Props {
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function InterludeBlockComp({ block, onChange, ...wrapperProps }: Props) {
+  const advanced = useAdvancedEditor()
   const [showAll, setShowAll] = useState(false)
   const [mixOpen, setMixOpen] = useState(false)
   // 시각 입력 초안 (null = 편집 중 아님). 평소엔 block.time을 그대로 보여 되돌리기가 바로 반영된다
@@ -98,7 +100,7 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
               placeholder="직접 입력"
               className="text-xs px-2.5 py-1 rounded-full border border-blue-200 text-blue-400 outline-none focus:border-blue-400 placeholder:text-blue-200 w-20 bg-white"
             />
-            <input
+            {(advanced || block.time !== undefined) && <input
               inputMode="numeric"
               value={timeValue}
               onFocus={() => setTimeDraft(timeValue)}
@@ -113,7 +115,7 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
               className={`text-xs px-2 py-1 rounded-full border w-16 bg-white outline-none placeholder:text-blue-200 ${
                 timeInvalid ? 'border-red-300 text-red-500' : 'border-blue-200 text-blue-500 focus:border-blue-400'
               }`}
-            />
+            />}
           </div>
           {expanded && (
             <div className="flex flex-col gap-1.5">
@@ -127,13 +129,13 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
           )}
         </div>
 
-        <input
+        {(advanced || Boolean(block.comment?.trim())) && <input
           value={block.comment ?? ''}
           onChange={event => onChange({ ...block, comment: event.target.value })}
           placeholder="한 줄 설명 (예: 묘혼투스케 + 3연 믹스)"
           aria-label="구간 한 줄 설명"
           className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-blue-100 bg-white text-gray-700 outline-none focus:border-blue-300 placeholder:text-gray-300"
-        />
+        />}
 
         {hasMix || mixOpen ? (
           <>
@@ -166,7 +168,7 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
               accent="blue"
             />
           </>
-        ) : (
+        ) : advanced && (
           <button
             type="button"
             onClick={() => setMixOpen(true)}

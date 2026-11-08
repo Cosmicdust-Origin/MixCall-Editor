@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { LyricBlock, LyricLine, Language } from '@/types'
 import BlockWrapper from './BlockWrapper'
+import { useAdvancedEditor } from './EditorModeContext'
 import { PasteMode, createLyricLine, joinLyricLines, parseJapaneseKoreanPaste, splitPastedLines } from '@/lib/lyricLines'
 
 interface Props {
@@ -42,6 +43,7 @@ function lyricFields(line: LyricLine): Pick<LyricLine, 'jp' | 'hira' | 'ko'> {
 export default function LyricBlockComp({ block, language, pasteMode, onChange, onSplit, ...wrapperProps }: Props) {
   // '+믹스'로 방금 연 줄에만 자동 포커스 (저장된 빈 믹스칸이 로드 시 포커스를 가져가지 않도록)
   const [openedMixId, setOpenedMixId] = useState<string | null>(null)
+  const advanced = useAdvancedEditor()
 
   const updateLine = (id: string, field: 'jp' | 'hira' | 'ko', value: string) => {
     onChange({ ...block, lines: block.lines.map(l => l.id === id ? { ...l, [field]: value } : l) })
@@ -122,7 +124,7 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
     <BlockWrapper type="lyric" {...wrapperProps}>
       <div className="flex flex-col gap-1">
         {block.lines.map((line, idx) => (
-          <div key={line.id}>
+          <div key={line.id} className={!advanced && idx > 0 ? 'mt-2' : undefined}>
             <div className="flex gap-2 items-start">
               <div className="flex-1 flex flex-col gap-1">
                 <input
@@ -159,23 +161,25 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-1 mt-1 shrink-0">
-                <button
-                  onClick={() => moveLine(line.id, 'up')}
-                  disabled={idx === 0}
-                  className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↑</button>
-                <button
-                  onClick={() => moveLine(line.id, 'down')}
-                  disabled={idx === block.lines.length - 1}
-                  className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↓</button>
-              </div>
-              {(block.lines.length > 1 || line.mix === undefined) && (
+              {advanced && (
+                <div className="flex flex-col gap-1 mt-1 shrink-0">
+                  <button
+                    onClick={() => moveLine(line.id, 'up')}
+                    disabled={idx === 0}
+                    className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↑</button>
+                  <button
+                    onClick={() => moveLine(line.id, 'down')}
+                    disabled={idx === block.lines.length - 1}
+                    className="text-gray-500 hover:text-gray-700 disabled:opacity-30 text-xs leading-none">↓</button>
+                </div>
+              )}
+              {(block.lines.length > 1 || (advanced && line.mix === undefined)) && (
                 <div className="flex flex-col items-center gap-1 mt-2 shrink-0">
                   {block.lines.length > 1 && (
                     <button onClick={() => removeLine(line.id)}
                       className="text-gray-500 hover:text-red-500 text-sm leading-none transition-colors">✕</button>
                   )}
-                  {line.mix === undefined && (
+                  {advanced && line.mix === undefined && (
                     <button
                       type="button"
                       onClick={() => {
@@ -189,7 +193,7 @@ export default function LyricBlockComp({ block, language, pasteMode, onChange, o
               )}
             </div>
 
-            {idx < block.lines.length - 1 && (
+            {advanced && idx < block.lines.length - 1 && (
               <div className="relative h-6 flex items-center justify-center my-1">
                 <div className="absolute inset-x-0 top-1/2 border-t border-gray-300" />
                 <div className="relative z-10 flex items-center gap-2">

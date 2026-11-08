@@ -7,10 +7,12 @@ import ReferenceVideoManager from '@/components/editor/ReferenceVideoManager'
 import TagInput from '@/components/editor/TagInput'
 import SectionTimeShiftDialog from '@/components/editor/SectionTimeShiftDialog'
 import QuickInsertBar from '@/components/editor/QuickInsertBar'
+import { EditorModeProvider } from '@/components/editor/EditorModeContext'
 import VideoEmbed from '@/components/VideoEmbed'
 import SheetBlocks from '@/components/SheetBlocks'
 import { SheetView } from '@/lib/sheetSections'
 import { getBlockNote } from '@/lib/blockNote'
+import { EDITOR_MODE_KEY, EditorMode, documentUsesAdvanced } from '@/lib/editorMode'
 import { getSheetSectionVideo } from '@/lib/youtube'
 import { countShiftableSections, shiftSectionTimes } from '@/lib/sectionTimeShift'
 import { PasteMode, trimBlankLyricLines } from '@/lib/lyricLines'
@@ -91,6 +93,8 @@ export default function EditorPage() {
   const [languageSwitch, setLanguageSwitch] = useState<LanguageSwitchRequest | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [pasteMode, setPasteMode] = useState<PasteMode>('auto')
+  // 기본/고급 UI 모드는 기기별 설정이라 문서·되돌리기와 무관하다
+  const [editorMode, setEditorMode] = useState<EditorMode>('basic')
   const [timeShift, setTimeShift] = useState<{ mode: 'replaced' | 'manual'; suggested: number | null } | null>(null)
 
   const dirtyRef = useRef(false)
@@ -254,6 +258,19 @@ export default function EditorPage() {
       history.reset()
       setBaseline(serializeDocument(loadedDocument))
 
+      // 저장된 모드가 없으면 문서 내용으로 정한다 (자동 선택값은 저장하지 않음)
+      let storedMode: string | null = null
+      try {
+        storedMode = localStorage.getItem(EDITOR_MODE_KEY)
+      } catch {
+        // 저장소를 쓸 수 없으면 문서 내용으로 판단
+      }
+      setEditorMode(
+        storedMode === 'basic' || storedMode === 'advanced'
+          ? storedMode
+          : documentUsesAdvanced(loadedDocument) ? 'advanced' : 'basic',
+      )
+
       try {
         const storedDraft = localStorage.getItem(getDraftKey(id))
         if (storedDraft) {
@@ -296,6 +313,15 @@ export default function EditorPage() {
     setPasteMode(next)
     try {
       localStorage.setItem(PASTE_MODE_KEY, next)
+    } catch {
+      // 저장 실패는 무시
+    }
+  }
+
+  const changeEditorMode = (next: EditorMode) => {
+    setEditorMode(next)
+    try {
+      localStorage.setItem(EDITOR_MODE_KEY, next)
     } catch {
       // 저장 실패는 무시
     }
@@ -798,6 +824,15 @@ export default function EditorPage() {
               className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${mode === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
               👁️ 미리보기</button>
           </div>
+
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+            <button type="button" aria-pressed={editorMode === 'basic'} onClick={() => changeEditorMode('basic')}
+              className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${editorMode === 'basic' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              기본</button>
+            <button type="button" aria-pressed={editorMode === 'advanced'} onClick={() => changeEditorMode('advanced')}
+              className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${editorMode === 'advanced' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+              고급</button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 mt-2 min-h-5 flex-wrap">
@@ -852,19 +887,19 @@ export default function EditorPage() {
           )}
         </div>
 
-        <QuickInsertBar />
+        {editorMode === 'advanced' && <QuickInsertBar />}
       </header>
 
       <main data-quick-insert-scope className="max-w-2xl mx-auto px-4 py-6">
         {mode === 'edit' ? (
-          <>
+          <EditorModeProvider value={editorMode === 'advanced'}>
             {/* 곡 메타 카드: 참고영상 + 태그 */}
             <div className="mb-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
               <ReferenceVideoManager
                 videos={referenceVideos}
                 onChange={changeReferenceVideos}
               />
-              {countShiftableSections(blocks).count > 0 && (
+              {editorMode === 'advanced' && countShiftableSections(blocks).count > 0 && (
                 <button
                   type="button"
                   onClick={() => setTimeShift({ mode: 'manual', suggested: null })}
@@ -877,7 +912,7 @@ export default function EditorPage() {
               <TagInput tags={tags} onChange={changeTags} />
             </div>
 
-            {language === 'jp' && (
+            {editorMode === 'advanced' && language === 'jp' && (
               <div className="mb-3 flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-medium text-gray-500 shrink-0">가사 붙여넣기</span>
@@ -898,7 +933,7 @@ export default function EditorPage() {
               </div>
             )}
 
-            <BlockList blocks={blocks} language={language} pasteMode={pasteMode} mixClipboard={mixClipboard} onCopyMix={setMixClipboard} onChange={trackBlocks} />
+            <BlockList blocks={blocks} language={language} pasteMode={editorMode === 'advanced' ? pasteMode : 'auto'} mixClipboard={mixClipboard} onCopyMix={setMixClipboard} onChange={trackBlocks} />
             <div className="flex gap-2 mt-4 justify-center flex-wrap">
               <button onClick={() => addBlock('lyric')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors">
@@ -909,11 +944,18 @@ export default function EditorPage() {
               <button onClick={() => addBlock('interlude')}
                 className="text-sm px-4 py-2 rounded-lg border border-dashed border-blue-200 text-blue-300 hover:text-blue-500 hover:border-blue-400 transition-colors">
                 + 구간</button>
-              <button onClick={() => addBlock('performance')}
-                className="text-sm px-4 py-2 rounded-lg border border-dashed border-purple-200 text-purple-300 hover:text-purple-500 hover:border-purple-400 transition-colors">
-                + 퍼포먼스</button>
+              {editorMode === 'advanced' && (
+                <button onClick={() => addBlock('performance')}
+                  className="text-sm px-4 py-2 rounded-lg border border-dashed border-purple-200 text-purple-300 hover:text-purple-500 hover:border-purple-400 transition-colors">
+                  + 퍼포먼스</button>
+              )}
             </div>
-          </>
+            {editorMode === 'basic' && (
+              <p className="text-xs text-gray-400 text-center mt-3">
+                가사줄 믹스, 구간 시간·설명, 블록 복제·합치기 같은 기능은 <button type="button" onClick={() => changeEditorMode('advanced')} className="underline hover:text-gray-600">고급 모드</button>에서 쓸 수 있어요.
+              </p>
+            )}
+          </EditorModeProvider>
         ) : (
           <Preview blocks={blocks} artistName={artistName} songTitle={songTitle} language={language} referenceVideos={referenceVideos} tags={tags} />
         )}

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { MixAlternative, MixPreset } from '@/types'
 import { MIX_DB, getNextTokens, getSuggestions } from '@/lib/mixDb'
+import { useAdvancedEditor } from './EditorModeContext'
 
 interface MixContentValue {
   text?: string
@@ -49,6 +50,7 @@ export default function MixContentEditor({ value, onChange, accent = 'red' }: Pr
   const [nextTokens, setNextTokens] = useState<string[]>([])
   const [pendingMix, setPendingMix] = useState<MixPreset | null>(null)
   const wordInputRef = useRef<HTMLInputElement>(null)
+  const advanced = useAdvancedEditor()
   const theme = ACCENT[accent]
   const text = value.text ?? ''
   const alternatives = value.alternatives ?? []
@@ -213,16 +215,16 @@ export default function MixContentEditor({ value, onChange, accent = 'red' }: Pr
       <div className="border-t border-gray-100" />
 
       <div className="flex flex-col gap-2">
-        <span className="text-xs font-semibold text-gray-400">구호 조립</span>
-        <input
+        {advanced && <span className="text-xs font-semibold text-gray-400">구호 조립</span>}
+        {advanced && <input
           ref={wordInputRef}
           value={wordInput}
           onChange={event => handleWordChange(event.target.value)}
           onKeyDown={handleWordKeyDown}
           placeholder="단어 입력 후 스페이스 또는 Enter"
           className={`w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm outline-none ${theme.focus} placeholder:text-gray-300 shadow-sm`}
-        />
-        {nextTokens.length > 0 && (
+        />}
+        {advanced && nextTokens.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {nextTokens.map((token, index) => (
               <button
@@ -270,14 +272,14 @@ export default function MixContentEditor({ value, onChange, accent = 'red' }: Pr
         </div>
       )}
 
-      <button
+      {advanced && <button
         type="button"
         onClick={addAlternative}
         className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-500 transition-colors self-start"
       >
         <span className="w-4 h-4 rounded-full border border-orange-300 flex items-center justify-center text-[10px]">+</span>
         또는 추가
-      </button>
+      </button>}
     </div>
   )
 }

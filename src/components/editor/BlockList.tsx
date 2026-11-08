@@ -9,6 +9,7 @@ import PerformanceBlockComp from './PerformanceBlock'
 import { getBlockNote } from '@/lib/blockNote'
 import { PasteMode } from '@/lib/lyricLines'
 import { ChangeKind } from '@/lib/useEditorHistory'
+import { useAdvancedEditor } from './EditorModeContext'
 
 interface Props {
   blocks: Block[]
@@ -28,6 +29,7 @@ function withMix(line: LyricLine, mix: string | undefined): LyricLine {
 }
 
 export default function BlockList({ blocks, language, pasteMode, mixClipboard, onCopyMix, onChange }: Props) {
+  const advanced = useAdvancedEditor()
   const updateBlock = (id: string, updated: Block) => {
     onChange(blocks.map(b => b.id === id ? updated : b))
   }
@@ -198,7 +200,7 @@ export default function BlockList({ blocks, language, pasteMode, mixClipboard, o
 
         return (
           <Fragment key={block.id}>
-            {canMergeWithPrev && (
+            {advanced && canMergeWithPrev && (
               <div className="relative h-6 flex items-center justify-center my-1">
                 <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-gray-300" />
                 <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import VideoLinkInput from './VideoLinkInput'
+import { useAdvancedEditor } from './EditorModeContext'
 
 interface Props {
   type: 'lyric' | 'mix' | 'interlude' | 'performance'
@@ -35,6 +36,7 @@ export default function BlockWrapper({
   onInsertLyric, onInsertMix, onInsertInterlude, onInsertPerformance,
   children
 }: Props) {
+  const advanced = useAdvancedEditor()
   const [hover, setHover] = useState(false)
   const [noteOpen, setNoteOpen] = useState(Boolean(note))
   const [mixCopied, setMixCopied] = useState(false)
@@ -90,7 +92,7 @@ export default function BlockWrapper({
 
       <div className="p-4 pt-5">
         {children}
-        {noteOpen ? (
+        {noteOpen || Boolean(note.trim()) ? (
           <div className="mt-2 flex items-start gap-2 border-l-2 border-gray-200 pl-2">
             <span aria-hidden="true" className="pt-1 text-xs text-gray-300">※</span>
             <textarea
@@ -99,6 +101,7 @@ export default function BlockWrapper({
               placeholder="이 블록에 대한 짧은 설명"
               rows={1}
               autoFocus={!note}
+              onFocus={() => setNoteOpen(true)}
               className="min-h-8 max-h-24 flex-1 resize-y bg-transparent px-1 py-1 text-xs leading-relaxed text-gray-500 outline-none placeholder:text-gray-300"
             />
             <button
@@ -113,7 +116,7 @@ export default function BlockWrapper({
               ✕
             </button>
           </div>
-        ) : (
+        ) : advanced && (
           <button
             type="button"
             onClick={() => setNoteOpen(true)}
@@ -122,10 +125,12 @@ export default function BlockWrapper({
             + 주석
           </button>
         )}
-        <VideoLinkInput
-          value={referenceUrl}
-          onChange={onReferenceUrlChange}
-        />
+        {(advanced || Boolean(referenceUrl)) && (
+          <VideoLinkInput
+            value={referenceUrl}
+            onChange={onReferenceUrlChange}
+          />
+        )}
       </div>
 
       <div className={`flex gap-1 px-4 pb-3 flex-wrap transition-opacity ${hover ? 'opacity-100' : 'opacity-0 [@media(hover:none)]:opacity-100'}`}>
@@ -133,17 +138,19 @@ export default function BlockWrapper({
           className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 disabled:opacity-25 hover:text-gray-700 hover:border-gray-400">↑</button>
         <button onClick={onMoveDown} disabled={isLast}
           className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 disabled:opacity-25 hover:text-gray-700 hover:border-gray-400">↓</button>
-        <button onClick={onDuplicate}
-          className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">복제</button>
-        {onMergeWithPrev && (
+        {advanced && (
+          <button onClick={onDuplicate}
+            className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">복제</button>
+        )}
+        {advanced && onMergeWithPrev && (
           <button onClick={onMergeWithPrev}
             className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:text-gray-700 hover:border-gray-400">↑ 합치기</button>
         )}
-        {onCopyMix && (
+        {advanced && onCopyMix && (
           <button type="button" onClick={handleCopyMix}
             className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-300">{mixCopied ? '✓ 복사됨' : '믹스 복사'}</button>
         )}
-        {onPasteMix && (
+        {advanced && onPasteMix && (
           <button type="button" onClick={onPasteMix}
             className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-300">{`믹스 붙여넣기 (${mixPasteCount}줄)`}</button>
         )}
@@ -156,8 +163,10 @@ export default function BlockWrapper({
           className="text-xs px-2 py-1 rounded border border-red-300 text-red-400 hover:text-red-600">+ 믹스</button>
         <button onClick={onInsertInterlude}
           className="text-xs px-2 py-1 rounded border border-blue-300 text-blue-400 hover:text-blue-600">+ 구간</button>
-        <button onClick={onInsertPerformance}
-          className="text-xs px-2 py-1 rounded border border-purple-300 text-purple-400 hover:text-purple-600">+ 퍼포먼스</button>
+        {advanced && (
+          <button onClick={onInsertPerformance}
+            className="text-xs px-2 py-1 rounded border border-purple-300 text-purple-400 hover:text-purple-600">+ 퍼포먼스</button>
+        )}
       </div>
     </div>
   )
