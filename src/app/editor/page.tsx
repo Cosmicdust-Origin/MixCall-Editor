@@ -926,6 +926,7 @@ const VIEW_OPTIONS: { view: SheetView; label: string }[] = [
   { view: 'full', label: '전체' },
   { view: 'mix', label: '믹스만' },
   { view: 'sections', label: '구간만' },
+  { view: 'side', label: '나란히' },
 ]
 
 function Preview({ blocks, artistName, songTitle, language, referenceVideos, tags }: {

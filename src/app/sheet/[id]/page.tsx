@@ -17,6 +17,7 @@ const VIEW_OPTIONS = [
   { view: 'full', label: '전체' },
   { view: 'mix', label: '믹스만' },
   { view: 'sections', label: '구간만' },
+  { view: 'side', label: '나란히' },
 ] as const
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {

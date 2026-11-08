@@ -1,6 +1,7 @@
 import { Block, InterludeBlock, ReferenceVideo } from '@/types'
 import BlockNote from '@/components/BlockNote'
 import SectionLabel from '@/components/SectionLabel'
+import SheetSideBySide from '@/components/SheetSideBySide'
 import SheetSummary from '@/components/SheetSummary'
 import VideoEmbed from '@/components/VideoEmbed'
 import { getBlockNote } from '@/lib/blockNote'
@@ -19,6 +20,7 @@ export default function SheetBlocks({ blocks, referenceVideos, view = 'full' }: 
   referenceVideos?: ReferenceVideo[]
   view?: SheetView
 }) {
+  if (view === 'side') return <SheetSideBySide blocks={blocks} referenceVideos={referenceVideos} />
   if (view !== 'full') return <SheetSummary blocks={blocks} referenceVideos={referenceVideos} view={view} />
 
   // 구간 라벨 탭 시 재생할 콜표 대표 영상 (첫 번째 유튜브 링크)

@@ -1,10 +1,10 @@
 import { Block, InterludeBlock } from '@/types'
 
-export type SheetView = 'full' | 'mix' | 'sections'
+export type SheetView = 'full' | 'mix' | 'sections' | 'side'
 
 export function parseSheetView(value: string | string[] | undefined | null): SheetView {
   const v = Array.isArray(value) ? value[0] : value
-  return v === 'mix' || v === 'sections' ? v : 'full'
+  return v === 'mix' || v === 'sections' || v === 'side' ? v : 'full'
 }
 
 export type SummaryItem =
