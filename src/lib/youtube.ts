@@ -51,6 +51,15 @@ export function pauseOtherYouTubeEmbeds(except?: HTMLIFrameElement | null) {
   })
 }
 
+// 콜표 대표 영상: 참고영상 중 첫 YouTube 링크 (start는 링크의 시작 시각, 없으면 0)
+export function getSheetSectionVideo(videos: { url: string }[] | undefined): { id: string; start: number } | null {
+  for (const video of videos ?? []) {
+    const parsed = parseYouTubeUrl(video.url)
+    if (parsed) return { id: parsed.id, start: parsed.start ?? 0 }
+  }
+  return null
+}
+
 // 구간 블록의 재생 영상: 블록 자신의 유튜브 링크 → 콜표 대표 영상 순
 export function getSectionVideoId(block: { referenceUrl?: string }, sheetVideoId: string | null): string | null {
   return (block.referenceUrl ? parseYouTubeUrl(block.referenceUrl)?.id : null) ?? sheetVideoId

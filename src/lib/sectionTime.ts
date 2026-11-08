@@ -37,6 +37,23 @@ export function extractTimeFromLabel(label: string): number | null {
   return toSeconds(undefined, match[1], match[2])
 }
 
+// "+2:05" | "-0:30" | "−1:00" → 부호 있는 초. 부호 없으면 양수. 형식이 틀리면 null
+export function parseSignedTimeInput(input: string): number | null {
+  const text = input.trim()
+  if (!text) return null
+  const sign = text[0]
+  const negative = sign === '-' || sign === '−'
+  const body = negative || sign === '+' ? text.slice(1).trim() : text
+  const seconds = parseTimeInput(body)
+  if (seconds === null) return null
+  return negative ? -seconds : seconds
+}
+
+export function formatSignedTime(seconds: number): string {
+  const sign = seconds < 0 ? '-' : '+'
+  return `${sign}${formatTime(Math.abs(seconds))}`
+}
+
 export function getSectionTime(block: { time?: number; label: string }): number | null {
   return block.time ?? extractTimeFromLabel(block.label)
 }

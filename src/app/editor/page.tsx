@@ -5,11 +5,14 @@ import { Block, Language, LyricLine, ReferenceVideo } from '@/types'
 import BlockList from '@/components/editor/BlockList'
 import ReferenceVideoManager from '@/components/editor/ReferenceVideoManager'
 import TagInput from '@/components/editor/TagInput'
+import SectionTimeShiftDialog from '@/components/editor/SectionTimeShiftDialog'
 import QuickInsertBar from '@/components/editor/QuickInsertBar'
 import VideoEmbed from '@/components/VideoEmbed'
 import SheetBlocks from '@/components/SheetBlocks'
 import { SheetView } from '@/lib/sheetSections'
 import { getBlockNote } from '@/lib/blockNote'
+import { getSheetSectionVideo } from '@/lib/youtube'
+import { countShiftableSections, shiftSectionTimes } from '@/lib/sectionTimeShift'
 import { PasteMode, trimBlankLyricLines } from '@/lib/lyricLines'
 import { ChangeKind, useEditorHistory } from '@/lib/useEditorHistory'
 import { supabase } from '@/lib/supabase'
@@ -88,6 +91,7 @@ export default function EditorPage() {
   const [languageSwitch, setLanguageSwitch] = useState<LanguageSwitchRequest | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [pasteMode, setPasteMode] = useState<PasteMode>('auto')
+  const [timeShift, setTimeShift] = useState<{ mode: 'replaced' | 'manual'; suggested: number | null } | null>(null)
 
   const dirtyRef = useRef(false)
   const guardActiveRef = useRef(false)
@@ -98,6 +102,8 @@ export default function EditorPage() {
   const lastBlockIdRef = useRef<string | null>(null)
   const editScrollYRef = useRef(0)
   const prevModeRef = useRef<'edit' | 'preview'>('edit')
+  // 마지막으로 알려진 대표 영상 (삭제 후 추가로 교체할 때 비교용)
+  const lastSectionVideoRef = useRef<{ id: string; start: number } | null>(null)
 
   const history = useEditorHistory<EditorDocument>()
 
@@ -165,6 +171,22 @@ export default function EditorPage() {
   const changeReferenceVideos = (next: ReferenceVideo[]) => {
     track(next.length !== referenceVideos.length ? 'action' : 'typing')
     setReferenceVideos(next)
+
+    // 대표 영상이 다른 영상으로 바뀌면 구간 시각 이동을 제안한다
+    const prevVideo = lastSectionVideoRef.current
+    const nextVideo = getSheetSectionVideo(next)
+    if (prevVideo && nextVideo && (prevVideo.id !== nextVideo.id || prevVideo.start !== nextVideo.start)
+      && countShiftableSections(blocks).count > 0) {
+      const bothZero = prevVideo.start === 0 && nextVideo.start === 0
+      setTimeShift({ mode: 'replaced', suggested: bothZero ? null : nextVideo.start - prevVideo.start })
+    }
+  }
+
+  const applyTimeShift = (delta: number) => {
+    const result = shiftSectionTimes(blocks, delta)
+    trackBlocks(result.blocks, 'action')
+    setTimeShift(null)
+    if (result.clamped > 0) window.alert(`${result.clamped}개 구간은 0:00보다 앞이라 0:00으로 맞췄어요.`)
   }
 
   const handleUndo = () => {
@@ -176,6 +198,12 @@ export default function EditorPage() {
     const next = history.redo(editorDocument)
     if (next) applyDocument(next)
   }
+
+  // 영상이 잠깐 없는 상태(삭제 후 추가 사이)는 기억을 지우지 않는다
+  useEffect(() => {
+    const video = getSheetSectionVideo(referenceVideos)
+    if (video) lastSectionVideoRef.current = video
+  }, [referenceVideos])
 
   useEffect(() => {
     let cancelled = false
@@ -607,6 +635,17 @@ export default function EditorPage() {
         </div>
       )}
 
+      {timeShift && (
+        <SectionTimeShiftDialog
+          mode={timeShift.mode}
+          suggested={timeShift.suggested}
+          count={countShiftableSections(blocks).count}
+          fromLabel={countShiftableSections(blocks).fromLabel}
+          onApply={applyTimeShift}
+          onClose={() => setTimeShift(null)}
+        />
+      )}
+
       {languageSwitch && (
         <div className="fixed inset-0 z-[90] bg-black/40 px-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="language-dialog-title">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
@@ -825,6 +864,15 @@ export default function EditorPage() {
                 videos={referenceVideos}
                 onChange={changeReferenceVideos}
               />
+              {countShiftableSections(blocks).count > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTimeShift({ mode: 'manual', suggested: null })}
+                  className="self-start text-xs text-gray-500 hover:text-gray-700"
+                >
+                  ⏱ 구간 시각 일괄 이동
+                </button>
+              )}
               <div className="border-t border-gray-100" />
               <TagInput tags={tags} onChange={changeTags} />
             </div>
