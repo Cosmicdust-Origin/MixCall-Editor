@@ -50,3 +50,8 @@ export function pauseOtherYouTubeEmbeds(except?: HTMLIFrameElement | null) {
     )
   })
 }
+
+// 구간 블록의 재생 영상: 블록 자신의 유튜브 링크 → 콜표 대표 영상 순
+export function getSectionVideoId(block: { referenceUrl?: string }, sheetVideoId: string | null): string | null {
+  return (block.referenceUrl ? parseYouTubeUrl(block.referenceUrl)?.id : null) ?? sheetVideoId
+}

@@ -1,18 +1,26 @@
 import { Block, InterludeBlock, ReferenceVideo } from '@/types'
 import BlockNote from '@/components/BlockNote'
 import SectionLabel from '@/components/SectionLabel'
+import SheetSummary from '@/components/SheetSummary'
 import VideoEmbed from '@/components/VideoEmbed'
 import { getBlockNote } from '@/lib/blockNote'
 import { isBlankLyricLine, trimBlankLyricLines } from '@/lib/lyricLines'
 import { SECTION_BADGE_CLASS, getSectionCategory } from '@/lib/sectionLabels'
 import { getSectionTime } from '@/lib/sectionTime'
-import { parseYouTubeUrl } from '@/lib/youtube'
+import { SheetView } from '@/lib/sheetSections'
+import { getSectionVideoId, parseYouTubeUrl } from '@/lib/youtube'
 
 const isLabelOnlyInterlude = (block: Block): block is InterludeBlock =>
   block.type === 'interlude' && !block.text?.trim() && !(block.alternatives ?? []).length
 
 // 공개 콜표와 에디터 미리보기가 함께 쓰는 블록 렌더러 (서버/클라이언트 공용)
-export default function SheetBlocks({ blocks, referenceVideos }: { blocks: Block[]; referenceVideos?: ReferenceVideo[] }) {
+export default function SheetBlocks({ blocks, referenceVideos, view = 'full' }: {
+  blocks: Block[]
+  referenceVideos?: ReferenceVideo[]
+  view?: SheetView
+}) {
+  if (view !== 'full') return <SheetSummary blocks={blocks} referenceVideos={referenceVideos} view={view} />
+
   // 구간 라벨 탭 시 재생할 콜표 대표 영상 (첫 번째 유튜브 링크)
   const sheetVideoId = referenceVideos?.map(v => parseYouTubeUrl(v.url)?.id).find(Boolean) ?? null
 
@@ -77,7 +85,7 @@ export default function SheetBlocks({ blocks, referenceVideos }: { blocks: Block
                 comment={block.comment}
                 badgeClass={SECTION_BADGE_CLASS[getSectionCategory(block.label)]}
                 time={getSectionTime(block)}
-                videoId={(block.referenceUrl ? parseYouTubeUrl(block.referenceUrl)?.id : null) ?? sheetVideoId}
+                videoId={getSectionVideoId(block, sheetVideoId)}
               />
               {block.text && (
                 <p className="text-red-600 font-bold text-xs sm:text-sm leading-relaxed whitespace-pre-wrap mt-1">

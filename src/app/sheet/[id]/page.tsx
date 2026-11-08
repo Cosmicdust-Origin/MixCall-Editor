@@ -10,7 +10,14 @@ import BookmarkButton from '@/components/BookmarkButton'
 import VideoEmbed from '@/components/VideoEmbed'
 import SheetTagEditor from '@/components/SheetTagEditor'
 import SheetBlocks from '@/components/SheetBlocks'
+import { parseSheetView } from '@/lib/sheetSections'
 import { getDevProductionSheet } from '@/lib/devProductionSnapshot'
+
+const VIEW_OPTIONS = [
+  { view: 'full', label: '전체' },
+  { view: 'mix', label: '믹스만' },
+  { view: 'sections', label: '구간만' },
+] as const
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -52,8 +59,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-export default async function SheetPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SheetPage({ params, searchParams }: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ view?: string | string[] }>
+}) {
   const { id } = await params
+  const view = parseSheetView((await searchParams).view)
   const devSheet = await getDevProductionSheet(id)
   const sheet = devSheet ?? await prisma.callSheet.findUnique({
       where: { id },
@@ -139,8 +150,28 @@ export default async function SheetPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {/* 보기 전환 */}
+        <div className="flex justify-end mb-2">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white">
+            {VIEW_OPTIONS.map(opt => (
+              <Link
+                key={opt.view}
+                href={opt.view === 'full' ? `/sheet/${id}` : `/sheet/${id}?view=${opt.view}`}
+                replace
+                scroll={false}
+                aria-current={view === opt.view ? 'page' : undefined}
+                className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${
+                  view === opt.view ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl px-3 py-5 sm:p-6 shadow border border-gray-100 font-sans">
-          <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} />
+          <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} view={view} />
         </div>
 
         {isDevSnapshot ? (

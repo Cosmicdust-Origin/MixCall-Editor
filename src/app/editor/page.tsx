@@ -8,6 +8,7 @@ import TagInput from '@/components/editor/TagInput'
 import QuickInsertBar from '@/components/editor/QuickInsertBar'
 import VideoEmbed from '@/components/VideoEmbed'
 import SheetBlocks from '@/components/SheetBlocks'
+import { SheetView } from '@/lib/sheetSections'
 import { getBlockNote } from '@/lib/blockNote'
 import { PasteMode, trimBlankLyricLines } from '@/lib/lyricLines'
 import { ChangeKind, useEditorHistory } from '@/lib/useEditorHistory'
@@ -873,10 +874,17 @@ export default function EditorPage() {
   )
 }
 
+const VIEW_OPTIONS: { view: SheetView; label: string }[] = [
+  { view: 'full', label: '전체' },
+  { view: 'mix', label: '믹스만' },
+  { view: 'sections', label: '구간만' },
+]
+
 function Preview({ blocks, artistName, songTitle, language, referenceVideos, tags }: {
   blocks: Block[], artistName: string, songTitle: string, language: Language, referenceVideos: ReferenceVideo[], tags: string[]
 }) {
   const [copied, setCopied] = useState(false)
+  const [view, setView] = useState<SheetView>('full')
 
   const handleCopy = () => {
     const text = blocks.map(b => {
@@ -903,7 +911,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
       }
       const note = getBlockNote(b).trim()
       return [content, note ? `※ ${note}` : ''].filter(Boolean).join('\n')
-    }).join('\n\n')
+    }).filter(content => content.trim()).join('\n\n')
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -943,6 +951,24 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
         </div>
       )}
 
+      <div className="flex justify-end mb-2">
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white">
+          {VIEW_OPTIONS.map(opt => (
+            <button
+              key={opt.view}
+              type="button"
+              onClick={() => setView(opt.view)}
+              aria-pressed={view === opt.view}
+              className={`text-xs px-3 py-1.5 transition-colors whitespace-nowrap ${
+                view === opt.view ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl px-3 py-5 sm:p-6 shadow border border-gray-100 font-sans">
         {(artistName || songTitle) && (
           <div className="mb-4 pb-3 border-b border-gray-100">
@@ -950,7 +976,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
             {songTitle && <h2 className="text-gray-900 font-bold text-lg">{songTitle}</h2>}
           </div>
         )}
-        <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} />
+        <SheetBlocks blocks={blocks} referenceVideos={referenceVideos} view={view} />
       </div>
     </div>
   )
