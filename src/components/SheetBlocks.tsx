@@ -74,6 +74,7 @@ export default function SheetBlocks({ blocks, referenceVideos }: { blocks: Block
               <SectionLabel
                 blockId={block.id}
                 label={block.label}
+                comment={block.comment}
                 badgeClass={SECTION_BADGE_CLASS[getSectionCategory(block.label)]}
                 time={getSectionTime(block)}
                 videoId={(block.referenceUrl ? parseYouTubeUrl(block.referenceUrl)?.id : null) ?? sheetVideoId}

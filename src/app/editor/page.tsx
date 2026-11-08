@@ -893,7 +893,7 @@ function Preview({ blocks, artistName, songTitle, language, referenceVideos, tag
       }
       if (b.type === 'interlude') {
         content = [
-          `[${b.label}]`,
+          `[${b.label}]${b.comment?.trim() ? ` ${b.comment.trim()}` : ''}`,
           b.text,
           ...(b.alternatives ?? []).map(alternative => `또는\n${alternative.text}`),
         ].filter(Boolean).join('\n')

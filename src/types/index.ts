@@ -44,6 +44,7 @@ export interface InterludeBlock extends BaseBlock {
   mixName?: string;
   tokens?: string[];
   time?: number;  // 구간 시작 시각(초). 참고영상 점프용
+  comment?: string;  // 구간 한 줄 설명 (부제목)
 }
 
 // ─── 퍼포먼스 블록 ───────────────────────────────────────────

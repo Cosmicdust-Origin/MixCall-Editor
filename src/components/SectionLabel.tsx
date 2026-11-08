@@ -9,13 +9,14 @@ const OPEN_EVENT = 'mixcall:section-player'
 interface Props {
   blockId: string
   label: string
+  comment?: string
   badgeClass: string
   time: number | null
   videoId: string | null
 }
 
 // 구간 라벨 배지. 시각과 참고영상이 있으면 눌러서 그 시각부터 인라인 재생한다
-export default function SectionLabel({ blockId, label, badgeClass, time, videoId }: Props) {
+export default function SectionLabel({ blockId, label, comment, badgeClass, time, videoId }: Props) {
   const [open, setOpen] = useState(false)
 
   // 다른 구간이 열리면 이 구간은 닫는다 (한 번에 하나만 재생)
@@ -27,8 +28,18 @@ export default function SectionLabel({ blockId, label, badgeClass, time, videoId
     return () => window.removeEventListener(OPEN_EVENT, onOpen)
   }, [blockId])
 
+  const commentText = comment?.trim()
+  const commentEl = commentText ? (
+    <span className="text-xs font-medium text-gray-600 whitespace-pre-wrap">{commentText}</span>
+  ) : null
+
   if (time === null || videoId === null) {
-    return <span className={`text-xs font-bold px-2 py-0.5 rounded ${badgeClass}`}>{label}</span>
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-6">
+        <span className={`text-xs font-bold px-2 py-0.5 rounded ${badgeClass}`}>{label}</span>
+        {commentEl}
+      </div>
+    )
   }
 
   const toggle = () => {
@@ -44,16 +55,19 @@ export default function SectionLabel({ blockId, label, badgeClass, time, videoId
 
   return (
     <>
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-label={`${label} 구간 영상 ${open ? '닫기' : `${formatTime(time)}부터 재생`}`}
-        className={`text-xs font-bold px-2 py-0.5 rounded ${badgeClass} inline-flex items-center gap-1 hover:opacity-80 transition-opacity`}
-      >
-        {label}
-        <span className="font-normal opacity-80">{open ? '■ 닫기' : `▶ ${formatTime(time)}`}</span>
-      </button>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-6">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-label={`${label} 구간 영상 ${open ? '닫기' : `${formatTime(time)}부터 재생`}`}
+          className={`text-xs font-bold px-2 py-0.5 rounded ${badgeClass} inline-flex items-center gap-1 hover:opacity-80 transition-opacity`}
+        >
+          {label}
+          <span className="font-normal opacity-80">{open ? '■' : '▶'}</span>
+        </button>
+        {commentEl}
+      </div>
       {open && (
         <div className="mt-2 mb-1">
           <div className="relative w-full" style={{ paddingTop: '56.25%' }}>

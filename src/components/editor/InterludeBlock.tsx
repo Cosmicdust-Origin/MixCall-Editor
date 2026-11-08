@@ -127,6 +127,14 @@ export default function InterludeBlockComp({ block, onChange, ...wrapperProps }:
           )}
         </div>
 
+        <input
+          value={block.comment ?? ''}
+          onChange={event => onChange({ ...block, comment: event.target.value })}
+          placeholder="한 줄 설명 (예: 묘혼투스케 + 3연 믹스)"
+          aria-label="구간 한 줄 설명"
+          className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-blue-100 bg-white text-gray-700 outline-none focus:border-blue-300 placeholder:text-gray-300"
+        />
+
         {hasMix || mixOpen ? (
           <>
             <div className="border-t border-blue-100" />
