@@ -28,3 +28,16 @@ body {
 /* 에디터 시인성 개선 */
 input::placeholder { color: #9ca3af; }
 textarea::placeholder { color: #9ca3af; }
+/* 나란히 보기 글자 크기 (3단계는 기본 클래스 그대로) */
+[data-side-size="1"] .side-lyric { font-size: 10px; line-height: 1.3; }
+[data-side-size="1"] .side-sub, [data-side-size="1"] .side-mix, [data-side-size="1"] .side-perf { font-size: 9px; line-height: 1.3; }
+[data-side-size="1"] .side-mix-alt-label { font-size: 8px; }
+[data-side-size="2"] .side-lyric { font-size: 11px; line-height: 1.35; }
+[data-side-size="2"] .side-sub, [data-side-size="2"] .side-mix, [data-side-size="2"] .side-perf { font-size: 10px; line-height: 1.35; }
+[data-side-size="2"] .side-mix-alt-label { font-size: 9px; }
+[data-side-size="4"] .side-lyric { font-size: 15px; line-height: 1.45; }
+[data-side-size="4"] .side-sub, [data-side-size="4"] .side-mix, [data-side-size="4"] .side-perf { font-size: 13px; line-height: 1.45; }
+[data-side-size="4"] .side-mix-alt-label { font-size: 11px; }
+[data-side-size="5"] .side-lyric { font-size: 17px; line-height: 1.5; }
+[data-side-size="5"] .side-sub, [data-side-size="5"] .side-mix, [data-side-size="5"] .side-perf { font-size: 15px; line-height: 1.5; }
+[data-side-size="5"] .side-mix-alt-label { font-size: 12px; }
