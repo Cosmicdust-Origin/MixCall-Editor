@@ -52,6 +52,7 @@ type LanguageSwitchRequest = {
 
 const DRAFT_PREFIX = 'mix-call-editor:draft:'
 const PASTE_MODE_KEY = 'mix-call-editor:paste-mode'
+const MODE_NOTICE_KEY = 'mix-call-editor:mode-notice-dismissed'
 const UNSAVED_MESSAGE = '저장하지 않은 변경사항이 있습니다. 페이지를 나갈까요?'
 
 const getDraftKey = (sheetId: string | null) => `${DRAFT_PREFIX}${sheetId ?? 'new'}`
@@ -95,6 +96,9 @@ export default function EditorPage() {
   const [pasteMode, setPasteMode] = useState<PasteMode>('auto')
   // 기본/고급 UI 모드는 기기별 설정이라 문서·되돌리기와 무관하다
   const [editorMode, setEditorMode] = useState<EditorMode>('basic')
+  // 저장된 모드 없이 기본 모드로 정해졌는지 (안내 배너용)
+  const [autoBasic, setAutoBasic] = useState(false)
+  const [noticeDismissed, setNoticeDismissed] = useState(true)
   const [timeShift, setTimeShift] = useState<{ mode: 'replaced' | 'manual'; suggested: number | null } | null>(null)
 
   const dirtyRef = useRef(false)
@@ -265,11 +269,48 @@ export default function EditorPage() {
       } catch {
         // 저장소를 쓸 수 없으면 문서 내용으로 판단
       }
-      setEditorMode(
-        storedMode === 'basic' || storedMode === 'advanced'
-          ? storedMode
-          : documentUsesAdvanced(loadedDocument) ? 'advanced' : 'basic',
-      )
+      let nextMode: EditorMode = 'basic'
+      let nextAutoBasic = false
+      if (storedMode === 'basic' || storedMode === 'advanced') {
+        nextMode = storedMode
+      } else if (documentUsesAdvanced(loadedDocument)) {
+        nextMode = 'advanced'
+      } else {
+        // 다른 콜표에서 고급 기능을 쓴 적이 있으면 고급 모드로 연다
+        let usesAdvanced = false
+        if (session) {
+          try {
+            const response = await fetch('/api/sheets', {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            })
+            const sheets = await response.json()
+            if (response.ok && Array.isArray(sheets)) {
+              usesAdvanced = sheets.some(sheet => Array.isArray(sheet?.blocks) && documentUsesAdvanced({ blocks: sheet.blocks }))
+            }
+          } catch {
+            // 실패하면 기본 모드
+          }
+        }
+        if (cancelled) return
+        if (usesAdvanced) {
+          nextMode = 'advanced'
+          try {
+            localStorage.setItem(EDITOR_MODE_KEY, 'advanced')
+          } catch {
+            // 저장 실패는 무시
+          }
+        } else {
+          nextAutoBasic = true
+        }
+      }
+      setEditorMode(nextMode)
+      setAutoBasic(nextAutoBasic)
+      try {
+        setNoticeDismissed(localStorage.getItem(MODE_NOTICE_KEY) === '1')
+      } catch {
+        // 저장소를 쓸 수 없으면 안내를 보여준다
+        setNoticeDismissed(false)
+      }
 
       try {
         const storedDraft = localStorage.getItem(getDraftKey(id))
@@ -318,8 +359,18 @@ export default function EditorPage() {
     }
   }
 
+  const dismissModeNotice = () => {
+    setNoticeDismissed(true)
+    try {
+      localStorage.setItem(MODE_NOTICE_KEY, '1')
+    } catch {
+      // 저장 실패는 무시
+    }
+  }
+
   const changeEditorMode = (next: EditorMode) => {
     setEditorMode(next)
+    setAutoBasic(false)
     try {
       localStorage.setItem(EDITOR_MODE_KEY, next)
     } catch {
@@ -891,6 +942,14 @@ export default function EditorPage() {
       </header>
 
       <main data-quick-insert-scope className="max-w-2xl mx-auto px-4 py-6">
+        {mode === 'edit' && editorMode === 'basic' && autoBasic && !noticeDismissed && (
+          <div className="mb-3 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+            <p className="flex-1">
+              기본 모드로 열렸어요. 가사줄 믹스·구간 시간 같은 기능은 <button type="button" onClick={() => changeEditorMode('advanced')} className="underline font-medium">고급 모드</button>에서 쓸 수 있어요.
+            </p>
+            <button type="button" aria-label="안내 닫기" onClick={dismissModeNotice} className="shrink-0 text-blue-400 hover:text-blue-600">✕</button>
+          </div>
+        )}
         {mode === 'edit' ? (
           <EditorModeProvider value={editorMode === 'advanced'}>
             {/* 곡 메타 카드: 참고영상 + 태그 */}
