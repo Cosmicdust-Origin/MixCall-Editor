@@ -5,15 +5,18 @@ import Link from 'next/link'
 import AuthButton from '@/components/AuthButton'
 import SearchBar from '@/components/SearchBar'
 import SheetCard from '@/components/SheetCard'
+import Pagination from '@/components/Pagination'
 import { getDevProductionSnapshot } from '@/lib/devProductionSnapshot'
 
-async function getPublicSheets(query?: string, tags?: string[], mode?: string) {
+const PAGE_SIZE = 20
+
+async function getPublicSheets(query: string | undefined, tags: string[], mode: string | undefined, page: number) {
   const snapshot = await getDevProductionSnapshot()
   if (snapshot) {
     const normalizedQuery = query?.trim().toLocaleLowerCase('ko-KR')
     const normalizedTags = (tags ?? []).map(tag => tag.toLocaleLowerCase('ko-KR'))
 
-    return snapshot.sheets.filter(sheet => {
+    const filtered = snapshot.sheets.filter(sheet => {
       const matchesQuery = !normalizedQuery || (
         mode === 'title'
           ? (sheet.songTitle ?? '').toLocaleLowerCase('ko-KR').includes(normalizedQuery)
@@ -24,51 +27,66 @@ async function getPublicSheets(query?: string, tags?: string[], mode?: string) {
       const sheetTags = sheet.tags.map(item => item.tag.name.toLocaleLowerCase('ko-KR'))
       const matchesTags = normalizedTags.every(tag => sheetTags.includes(tag))
       return matchesQuery && matchesTags
-    }).slice(0, 50)
+    })
+    const total = filtered.length
+    const effectivePage = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)))
+    return {
+      sheets: filtered.slice((effectivePage - 1) * PAGE_SIZE, effectivePage * PAGE_SIZE),
+      total,
+      page: effectivePage,
+    }
   }
 
   try {
+    const where = {
+      isPublic: true,
+      ...(query ? {
+        OR: mode === 'title'
+          ? [{ songTitle: { contains: query, mode: 'insensitive' as const } }]
+          : [
+              { artistName: { contains: query, mode: 'insensitive' as const } },
+              { songTitle: { contains: query, mode: 'insensitive' as const } },
+            ]
+      } : {}),
+      // 복수 태그 AND 검색: 선택한 태그를 모두 가진 콜표만
+      ...(tags.length > 0 ? {
+        AND: tags.map(t => ({
+          tags: { some: { tag: { name: { equals: t, mode: 'insensitive' as const } } } }
+        }))
+      } : {}),
+    }
+    const total = await prisma.callSheet.count({ where })
+    // 요청한 페이지가 범위를 넘으면 마지막 페이지로 보정
+    const effectivePage = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)))
     const sheets = await prisma.callSheet.findMany({
-      where: {
-        isPublic: true,
-        ...(query ? {
-          OR: mode === 'title'
-            ? [{ songTitle: { contains: query, mode: 'insensitive' } }]
-            : [
-                { artistName: { contains: query, mode: 'insensitive' } },
-                { songTitle: { contains: query, mode: 'insensitive' } },
-              ]
-        } : {}),
-        // 복수 태그 AND 검색: 선택한 태그를 모두 가진 콜표만
-        ...(tags && tags.length > 0 ? {
-          AND: tags.map(t => ({
-            tags: { some: { tag: { name: { equals: t, mode: 'insensitive' } } } }
-          }))
-        } : {}),
-      },
+      where,
       orderBy: { updatedAt: 'desc' },
-      take: 50,
+      skip: (effectivePage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
         user: true,
         _count: { select: { likes: true } },
         tags: { include: { tag: true } },
       },
     })
-    return sheets
+    return { sheets, total, page: effectivePage }
   } catch {
-    return []
+    return { sheets: [], total: 0, page: 1 }
   }
 }
 
 export default async function HomePage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string, tag?: string | string[], mode?: string }>
+  searchParams: Promise<{ q?: string, tag?: string | string[], mode?: string, page?: string | string[] }>
 }) {
-  const { q, tag, mode } = await searchParams
+  const { q, tag, mode, page: pageParam } = await searchParams
   // tag 파라미터 정규화: 단일 string → string[], undefined → []
   const tags: string[] = tag ? (Array.isArray(tag) ? tag : [tag]) : []
-  const sheets = await getPublicSheets(q, tags, mode)
+  const parsedPage = parseInt((Array.isArray(pageParam) ? pageParam[0] : pageParam) ?? '', 10)
+  const requestedPage = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage
+  const { sheets, total, page } = await getPublicSheets(q, tags, mode, requestedPage)
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const defaultMode = tags.length > 0 ? 'tag' : mode === 'title' ? 'title' : 'all'
 
   return (
@@ -97,7 +115,7 @@ export default async function HomePage({
             {tags.length > 0
               ? tags.map(t => `#${t}`).join(' ') + ' 콜/믹스 표'
               : q ? `"${q}" 검색 결과` : '📋 등록된 콜/믹스 표'}
-            <span className="text-sm font-normal text-gray-400 ml-2">{sheets.length}개</span>
+            <span className="text-sm font-normal text-gray-400 ml-2">{total}개</span>
           </h2>
 
           {sheets.length === 0 ? (
@@ -116,6 +134,10 @@ export default async function HomePage({
                 <SheetCard key={sheet.id} sheet={sheet} />
               ))}
             </div>
+          )}
+
+          {totalPages > 1 && (
+            <Pagination page={page} totalPages={totalPages} query={q} tags={tags} mode={mode} />
           )}
         </div>
 
